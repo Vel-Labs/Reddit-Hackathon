@@ -1,0 +1,5 @@
+[mcp_servers.devvit]
+command = "npx"
+args = ["-y", "@devvit/mcp"]
+startup_timeout_sec = 20
+tool_timeout_sec = 60

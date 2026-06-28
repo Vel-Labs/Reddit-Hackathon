@@ -11,10 +11,11 @@
 - Deletion/recompile path.
 - Detailed product roadmaps and governance.
 - Passing local test/type/lint/build gates.
+- Environment bootstrap reverified on 2026-06-28: `npm run check` passes, Devvit MCP is registered in Codex, and `npm run dev` reaches Reddit OAuth after successful server/client rebuilds.
 
 ## First real-world task
 
-Initialize a unique Devvit app name and run the game in a playtest subreddit. Validate context fields, Redis writes, custom post creation, and expanded-mode sizing against the live platform.
+Choose a unique Devvit app name, complete Reddit OAuth, and run the game in a playtest subreddit. Validate context fields, Redis writes, custom post creation, and expanded-mode sizing against the live platform.
 
 ## Highest-value implementation backlog
 

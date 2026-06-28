@@ -1,12 +1,64 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Test and coverage output
 coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Environment and secrets
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.crt
+
+# Logs and diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+diagnostics/
+
+# Devvit local/runtime state
+.devvit/
+.devvit*
+!.devvit.example
+
+# Codex and agent local state
+.codex/*
+!.codex/config.toml
 .agent-context/
 .agent-runs/
-.DS_Store
-*.log
+
+# Caches
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+
+# Generated assets
 public/assets/kenney/runtime/**
 !public/assets/kenney/runtime/.gitkeep
+
+# Local package manager metadata
+.npm/
+.pnpm-store/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
