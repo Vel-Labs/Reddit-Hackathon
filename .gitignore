@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+.agent-context/
+.agent-runs/
+.DS_Store
+*.log
+public/assets/kenney/runtime/**
+!public/assets/kenney/runtime/.gitkeep

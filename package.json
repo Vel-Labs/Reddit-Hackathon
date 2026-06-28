@@ -1,0 +1,48 @@
+{
+  "name": "daily-dash-devvit",
+  "version": "0.1.0",
+  "private": true,
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "engines": {
+    "node": ">=22.2.0"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "devvit playtest",
+    "deploy": "npm run check && devvit upload",
+    "launch": "npm run deploy && devvit publish",
+    "login": "devvit login",
+    "lint": "eslint 'src/**/*.{ts,tsx}' 'tests/**/*.ts'",
+    "prettier": "prettier --write .",
+    "prettier:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:logic": "vitest run tests/shared",
+    "type-check": "tsc --build",
+    "validate:repo": "node scripts/validate-repo.mjs",
+    "validate:contracts": "node scripts/validate-contracts.mjs",
+    "validate:art": "node scripts/validate-art-manifest.mjs",
+    "check": "npm run validate:repo && npm run validate:contracts && npm run validate:art && npm run test && npm run type-check && npm run lint && npm run prettier:check"
+  },
+  "dependencies": {
+    "@devvit/start": "0.13.5",
+    "@devvit/web": "0.13.5",
+    "@hono/node-server": "2.0.6",
+    "devvit": "0.13.5",
+    "hono": "4.12.27",
+    "phaser": "4.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "^22.19.19",
+    "ajv": "^8.17.1",
+    "eslint": "10.4.1",
+    "globals": "17.7.0",
+    "prettier": "3.8.4",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.60.1",
+    "vite": "8.1.0",
+    "vitest": "^3.1.1"
+  }
+}

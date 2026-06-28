@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daily Dash</title>
+    <link rel="stylesheet" href="./splash.css" />
+  </head>
+  <body>
+    <main class="post-card">
+      <section class="copy">
+        <p class="eyebrow">COMMUNITY-BUILT COURIER ROUTES</p>
+        <h1>Daily Dash</h1>
+        <p class="tagline">Build a tile today. Ride the community route forever.</p>
+        <div class="status-row" aria-label="Daily route status">
+          <span><strong>3</strong> lanes</span>
+          <span><strong>8</strong> tiles</span>
+          <span><strong>1</strong> safe path guaranteed</span>
+        </div>
+        <button id="start-button" type="button">Open today’s route</button>
+      </section>
+      <section class="route-preview" aria-hidden="true">
+        <div class="lane"><i class="parcel"></i><i class="crate"></i></div>
+        <div class="lane"><i class="boost"></i></div>
+        <div class="lane gap"><i class="courier"></i></div>
+      </section>
+    </main>
+    <script type="module" src="./splash.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "daily-dash",
+  "post": {
+    "dir": "dist/client",
+    "entrypoints": {
+      "default": {
+        "inline": true,
+        "entry": "splash.html"
+      },
+      "game": {
+        "entry": "game.html"
+      }
+    }
+  },
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "permissions": {
+    "redis": true
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "Create Daily Dash post",
+        "description": "Create a playable Daily Dash post in this community",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/create-post"
+      }
+    ]
+  },
+  "triggers": {
+    "onAppInstall": "/internal/triggers/on-app-install"
+  },
+  "scheduler": {
+    "tasks": {
+      "compile-daily-route": {
+        "endpoint": "/internal/scheduler/compile-daily-route",
+        "cron": "5 0 * * *"
+      },
+      "weekly-maintenance": {
+        "endpoint": "/internal/scheduler/weekly-maintenance",
+        "cron": "25 3 * * 1"
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  }
+}

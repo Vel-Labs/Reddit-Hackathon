@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "Daily Dash",
+    "package": "daily-dash-devvit",
+    "type": "devvit-web-phaser-game",
+    "status": "hackathon-prototype",
+    "goal": "Community-authored fair course tiles compound into permanent playable delivery routes."
+  },
+  "truth": {
+    "gameplay": "contracts/gameplay-rules.md",
+    "storage": "contracts/redis-keyspace.md",
+    "tenancy": "contracts/tenancy-and-world-tour.md",
+    "architecture": "docs/architecture/ARCHITECTURE.md",
+    "roadmaps": "docs/roadmaps/README.md"
+  },
+  "boundaries": {
+    "client": "src/client",
+    "server": "src/server",
+    "shared": "src/shared",
+    "contracts": "contracts",
+    "tests": "tests",
+    "artManifest": "assets/kenney-manifest.json"
+  },
+  "commands": {
+    "development": "npm run dev",
+    "build": "npm run build",
+    "logicTests": "npm run test:logic",
+    "typeCheck": "npm run type-check",
+    "fullCheck": "npm run check",
+    "deploy": "npm run deploy"
+  },
+  "risks": [
+    "Devvit live playtest not yet verified in this generated package",
+    "ranked run outcomes need server-side input replay hardening",
+    "reaction-margin fairness pass is not yet implemented",
+    "World Tour requires external shared service and is disabled",
+    "third-party binary art is intentionally not bundled"
+  ]
+}

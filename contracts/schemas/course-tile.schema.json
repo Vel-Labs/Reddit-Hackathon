@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://daily-dash.local/contracts/course-tile.schema.json",
+  "title": "Daily Dash Course Tile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "id",
+    "tenantId",
+    "authorId",
+    "authorName",
+    "createdAt",
+    "updatedAt",
+    "width",
+    "lanes",
+    "visualSeed",
+    "status"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "tenantId": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "authorId": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "authorName": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "width": { "const": 18 },
+    "visualSeed": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+    "status": { "enum": ["draft", "certified", "featured", "removed"] },
+    "lanes": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "array",
+        "minItems": 18,
+        "maxItems": 18,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["terrain", "feature"],
+          "properties": {
+            "terrain": { "enum": ["road", "gap"] },
+            "feature": { "enum": ["none", "obstacle", "boost", "parcel"] }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cleanPathCount",
+        "entryLaneCoverage",
+        "reachableExitLanes",
+        "minimumDamage",
+        "buildBudgetUsed",
+        "hazardCount",
+        "boostCount",
+        "parcelCount",
+        "difficulty",
+        "riskScore"
+      ],
+      "properties": {
+        "cleanPathCount": { "type": "integer", "minimum": 0 },
+        "entryLaneCoverage": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "reachableExitLanes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": [0, 1, 2] }
+        },
+        "minimumDamage": { "type": "integer", "minimum": 0 },
+        "buildBudgetUsed": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "hazardCount": { "type": "integer", "minimum": 0 },
+        "boostCount": { "type": "integer", "minimum": 0 },
+        "parcelCount": { "type": "integer", "minimum": 0 },
+        "difficulty": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "riskScore": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

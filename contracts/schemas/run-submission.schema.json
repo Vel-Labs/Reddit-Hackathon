@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://daily-dash.local/contracts/run-submission.schema.json",
+  "title": "Daily Dash Run Submission",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "token",
+    "routeId",
+    "elapsedMs",
+    "damageTaken",
+    "parcelsCollected",
+    "boostsTriggered",
+    "completed"
+  ],
+  "properties": {
+    "token": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "routeId": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "elapsedMs": { "type": "integer", "minimum": 1, "maximum": 900000 },
+    "damageTaken": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "parcelsCollected": { "type": "integer", "minimum": 0, "maximum": 200 },
+    "boostsTriggered": { "type": "integer", "minimum": 0, "maximum": 200 },
+    "completed": { "type": "boolean" }
+  }
+}
