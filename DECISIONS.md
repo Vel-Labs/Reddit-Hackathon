@@ -90,3 +90,17 @@ The fair-path solver rejects forced lane changes into a destination lane that wa
 **Status:** Accepted
 
 Direct Redis proof is useful for platform audits, but a reusable diagnostics panel can become an unnecessary data surface. If diagnostics are needed, expose only aggregate health signals behind authenticated moderator checks: tenant id/name, current app version, daily route id exists, stored route count, certified tile count, profile count, report count, current user's profile exists, and today's post setting exists. Do not expose raw Redis values, arbitrary key lookup, user ids beyond the current user, run tokens, report bodies, or tile JSON.
+
+## D-014 — Post-publish test rides are explicitly practice-only
+
+**Date:** 2026-06-29
+**Status:** Accepted
+
+After a certified tile is published, Builder offers `Test My Tile`, `Ride Today`, `Try Yesterday`, and `Roadbook`. `Test My Tile` starts a preview route and never writes ranked leaderboard results; ranked play only starts from stored route id + revision routes issued by the server.
+
+## D-015 — Runner sprites remain semantic and replaceable
+
+**Date:** 2026-06-29
+**Status:** Accepted
+
+Runner route objects may render with curated Kenney textures for readability, but gameplay continues to depend only on canonical cells and semantic roles. Missing art falls back to vector drawing, and no rule or collision path may depend on a filename.

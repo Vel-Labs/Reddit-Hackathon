@@ -17,6 +17,8 @@ The evergreen game is a finite three-lane side-scrolling runner. “Evergreen”
 
 Lane movement is visually eased but logically deterministic. The canonical simulator evaluates one time column at a time and applies a one-column lane-change cooldown.
 
+Current implementation note: large tap zones and vertical swipe support are implemented in Runner on 2026-06-29. Live Devvit mobile gesture-conflict QA remains pending.
+
 ## Failure contract
 
 The package has three integrity pips.
@@ -90,15 +92,25 @@ Medals:
 
 These are scaffold thresholds. Before launch, calibrate them against a corpus of founding and community-style routes. Route-specific percentile medals are a future alternative if fixed thresholds become unfair across biomes.
 
+2026-06-29 local sweep: an eight-tile founding-style route at base speed scored Bronze with no rewards, Silver with partial rewards, and Gold with all source rewards. Constants were left unchanged pending live playtest telemetry.
+
 ## Modes
 
 ### Daily Dash
 
 One deterministic tenant route per day. Its leaderboard is the primary competitive surface and resets naturally with the date.
 
+Today’s leaderboard is stored by route id and route revision, not by date alone. A repaired route revision starts a separate leaderboard so scores never mix incompatible geometry.
+
+### Yesterday’s route
+
+The previous daily route should remain playable from the post-publish prompt and Roadbook. It uses the same stored route id + revision leaderboard model as every other Roadbook route.
+
 ### Roadbook
 
 Permanent list of previously published tenant routes. Each route tracks medal, personal best, community best, contributor count, revision, and community-authored percentage.
+
+Roadbook should make today/yesterday/older routes clear. Starting a ranked run from Roadbook must issue a token for that route id + revision; result screens should link back to that route’s leaderboard.
 
 ### Shuffle
 
@@ -132,6 +144,23 @@ A route supports:
 - later ghost replays.
 
 Ghosts are optional for launch. A compact input-event replay is preferable to storing video or frame snapshots.
+
+## Route leaderboard storage
+
+Subreddit route leaderboards are installation-local Redis records keyed by route identity and revision:
+
+```text
+leaderboard:{routeId}:rev:{revision}
+best-runs:{routeId}:rev:{revision}
+```
+
+This means:
+
+- Today’s route has its own leaderboard.
+- Yesterday’s route keeps its leaderboard forever in Roadbook.
+- Older Roadbook routes keep replayable leaderboard history.
+- Repaired routes increment revision and do not mix old scores with new geometry.
+- Practice/test rides, including `Test My Tile`, never write ranked results.
 
 ## Server trust boundary
 
@@ -173,6 +202,12 @@ Run tokens, result validation, profile, leaderboard, personal best.
 
 Route list, selected-route details, revision-scoped leaderboard panel, revision labels, and random local route are implemented in first-pass form. Filters, medal state, and personal best remain launch polish.
 
+Runner HUD now also exposes route date, revision, average difficulty, and community-authored percentage so attribution is visible during play, not only in Roadbook.
+
+### B4.5 — daily/Roadbook play prompts
+
+Expose `Ride Today`, `Try Yesterday`, and `Open Roadbook` from the Builder post-publish flow. Result screens should return to the selected route’s leaderboard and clearly label ranked versus practice runs.
+
 ### B5 — mastery
 
 Ghosts, weekly collection, creator section stats, World Tour adapter.
@@ -184,3 +219,5 @@ Ghosts, weekly collection, creator section stats, World Tour adapter.
 - One collision does not produce repeated damage due to overlap.
 - A mobile player can operate the game with one thumb.
 - A route remains playable if World Tour and server calls fail; practice result still appears locally.
+- Today, yesterday, and Roadbook routes each record ranked runs against route id + revision.
+- Test-tile practice runs are clearly labeled and never appear on leaderboards.

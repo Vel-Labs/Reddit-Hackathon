@@ -22,6 +22,12 @@
 - Ranked run completion now submits compact lane-change events and derives damage, parcels, boosts, completion, and score through shared server replay.
 - Imported a small CC0 Kenney Platformer Pack Redux meadow subset and preloads mapped semantic art roles while preserving vector fallback.
 - Added a Creator postcard that shows featured tile crossings and top/middle/bottom path-choice splits from server-derived route/run data.
+- Runner first-run clarity now includes larger package-integrity pips, persistent lane/touch controls, swipe support, and clearer damage/reward feedback.
+- Builder publish success now shows `Test My Tile`, `Ride Today`, `Try Yesterday`, and `Roadbook` continuation actions; test-tile rides stay practice-only.
+- Builder repair flow now includes an `ERASE FIX` action for the currently highlighted validator issue.
+- Runner route rendering now uses semantic Kenney road, crate, boost, and collectible textures when available, with vector fallback preserved.
+- Runner route HUD now shows route date, revision, difficulty, and community-authored percentage.
+- Creator postcard entries now label featured status and clean-clear rate.
 
 ## 0.1.0 — 2026-06-25
 

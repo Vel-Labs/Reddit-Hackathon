@@ -8,6 +8,9 @@ import { createButton } from '../ui/button';
 const formatChoices = (tile: CreatorOutcomeTile): string =>
   `top ${tile.pathChoices.top} · middle ${tile.pathChoices.middle} · bottom ${tile.pathChoices.bottom}`;
 
+const cleanRate = (tile: CreatorOutcomeTile): string =>
+  tile.crossings === 0 ? '0%' : `${Math.round((tile.cleanCrossings / tile.crossings) * 100)}%`;
+
 export class CreatorScene extends Phaser.Scene {
   private statusText?: Phaser.GameObjects.Text;
   private bodyText?: Phaser.GameObjects.Text;
@@ -100,8 +103,8 @@ export class CreatorScene extends Phaser.Scene {
       .slice(0, 5)
       .map((tile) =>
         [
-          `${tile.dateKey} · route rev ${tile.routeRevision} · section ${tile.tileIndex + 1}`,
-          `Crossings ${tile.crossings} · clean ${tile.cleanCrossings} · choices ${formatChoices(tile)}`,
+          `FEATURED · ${tile.dateKey} · route rev ${tile.routeRevision} · section ${tile.tileIndex + 1}`,
+          `Crossings ${tile.crossings} · clean clears ${tile.cleanCrossings} (${cleanRate(tile)}) · path split ${formatChoices(tile)}`,
         ].join('\n')
       );
     this.bodyText?.setText(lines.join('\n\n'));

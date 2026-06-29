@@ -20,6 +20,14 @@
 - Ranked runs submit lane-change events; the server replays route geometry to derive damage, rewards, completion, and score.
 - Small CC0 Kenney Platformer Pack Redux meadow subset is imported, licensed, manifest-mapped, and preloaded behind semantic roles.
 - Creator postcard shows featured tile crossings and top/middle/bottom path-choice splits derived from current route best-run data.
+- Runner first-run UI now shows clearer lane controls, large package-integrity pips, event-specific damage/reward feedback, and a compact object legend.
+- Runner accepts tap zones and vertical swipe input for lane changes; live Reddit mobile gesture conflict QA is still pending.
+- Builder post-publish flow now offers `Test My Tile`, `Ride Today`, `Try Yesterday`, and `Roadbook`; `Test My Tile` uses preview mode and stays practice-only.
+- Builder repair flow now includes `ERASE FIX` for the currently highlighted validator issue.
+- Runner route rendering now uses semantic Kenney textures for road, crate, boost, and collectible roles when available, with vector fallback preserved.
+- Runner HUD now shows route date, revision, average difficulty, and community-authored percentage.
+- Creator postcard entries now label featured status and clean-clear rate.
+- Scoring calibration local sweep on 2026-06-29 left thresholds unchanged: clean no-reward founding-route runs land at Bronze, partial rewards at Silver, and full rewards can reach Gold.
 - Detailed product roadmaps and governance.
 - Passing local test/type/lint/build gates.
 - Environment bootstrap reverified on 2026-06-29: `npm run check` passes, Devvit MCP is registered in Codex, Devvit CLI auth works as `u/scubaxsteven`, `npx devvit upload --verbose` uploaded `drawn-to-deliver` v0.0.1, and `npm run dev` started playtest version `v0.0.1.6`.
@@ -33,5 +41,8 @@ Current live URL: `https://www.reddit.com/r/drawn_to_deliver_dev/?playtest=drawn
 
 ## Highest-value implementation backlog
 
-1. Decide whether direct Redis diagnostics are worth adding for playtest-only proof.
-2. Keep World Tour disabled until local launch quality is achieved.
+1. **Live persistence proof through behavior.** Prove Redis persistence through user-visible flows rather than a raw diagnostics panel: publish a tile, reload, see it in Creator/Roadbook or tomorrow’s route candidate pool. Only add diagnostics if behavior proof becomes insufficient. Current status: live/manual QA pending.
+2. **Moderation/reporting QA.** Exercise report/remove flows in the live subreddit with moderator account context. Confirm system fallback, route repair, and revision behavior are legible. Current status: live/moderator QA pending.
+3. **Device matrix.** Test desktop Chrome, Devvit mobile viewport, and real mobile Reddit if available. Check text fit, canvas framing, expanded-mode sizing, and overlapping controls. Current status: local build passes; live mobile/real-device QA pending.
+4. **Submission packaging.** Update Devpost-ready materials: tagline, description, rules compliance, public post link, app listing link, README proof, and optional short demo script/video. Current status: blocked until live persistence/moderation/device proof is refreshed after this gameplay pass.
+5. **World Tour remains disabled.** Keep World Tour as documented adapter/future scope until local launch quality is solid.

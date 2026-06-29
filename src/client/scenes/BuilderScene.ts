@@ -1,8 +1,11 @@
 import * as Phaser from 'phaser';
 import { apiClient } from '../api/client';
+import { session } from '../state/session';
 import { COLORS, FONT_FAMILY } from '../theme';
 import { createButton } from '../ui/button';
 import { LANE_COUNT, MAX_BUILD_BUDGET } from '../../shared/game/constants';
+import { generateRoute } from '../../shared/game/generator';
+import { dateKeyUtc } from '../../shared/game/seed';
 import {
   calculateBuildBudget,
   cloneTile,
@@ -14,6 +17,7 @@ import type {
   CourseTile,
   Feature,
   Lane,
+  RouteBundle,
   SafePath,
   Terrain,
   TileValidationResult,
@@ -53,6 +57,7 @@ export class BuilderScene extends Phaser.Scene {
   private repairIssues: ValidationIssue[] = [];
   private repairIssueIndex = 0;
   private highlightedIssue: IssueHighlight | undefined;
+  private postPublishObjects: Phaser.GameObjects.GameObject[] = [];
 
   private readonly gridX = 88;
   private readonly gridY = 142;
@@ -162,6 +167,10 @@ export class BuilderScene extends Phaser.Scene {
       fill: COLORS.warning,
       fontSize: 15,
     });
+    createButton(this, 1075, 136, 175, 44, 'ERASE FIX', () => this.eraseHighlightedCell(), {
+      fill: COLORS.paper,
+      fontSize: 15,
+    });
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.paintFromPointer(pointer));
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
@@ -210,6 +219,7 @@ export class BuilderScene extends Phaser.Scene {
     this.pushUndoState();
     this.tile = candidate;
     this.safePaths = [];
+    this.clearPostPublishPrompt();
     this.updateReadout();
     this.renderGrid();
   }
@@ -232,6 +242,7 @@ export class BuilderScene extends Phaser.Scene {
     this.tile = previous;
     this.safePaths = [];
     this.lastPaintKey = '';
+    this.clearPostPublishPrompt();
     this.statusText?.setText('Undid the last Builder edit.');
     this.updateReadout();
     this.renderGrid();
@@ -247,6 +258,7 @@ export class BuilderScene extends Phaser.Scene {
     this.tile = next;
     this.safePaths = [];
     this.lastPaintKey = '';
+    this.clearPostPublishPrompt();
     this.statusText?.setText('Redid the Builder edit.');
     this.updateReadout();
     this.renderGrid();
@@ -421,6 +433,30 @@ export class BuilderScene extends Phaser.Scene {
     );
   }
 
+  private eraseHighlightedCell(): void {
+    const issue = this.highlightedIssue;
+    if (!issue) {
+      this.statusText?.setText('Select an issue first, then erase the highlighted cell.');
+      return;
+    }
+    if (isBufferColumn(issue.column, this.tile.width)) {
+      this.statusText?.setText(
+        'Highlighted connector cells are locked. Fix nearby editable cells.'
+      );
+      return;
+    }
+    this.pushUndoState();
+    this.tile = setTileCell(this.tile, issue.lane, issue.column, 'road', 'none');
+    this.safePaths = [];
+    this.clearPostPublishPrompt();
+    this.statusText?.setText(
+      `Erased lane ${issue.lane + 1}, column ${issue.column + 1}. Recheck the next issue.`
+    );
+    this.refreshRepairSummary(true);
+    this.renderGrid();
+    this.updateReadout();
+  }
+
   private toIssueHighlight(issue: ValidationIssue | undefined): IssueHighlight | undefined {
     if (issue?.lane === undefined || issue.column === undefined) return undefined;
     return { lane: issue.lane, column: issue.column };
@@ -472,9 +508,123 @@ export class BuilderScene extends Phaser.Scene {
       this.renderGrid();
       this.updateReadout();
       this.statusText?.setText('PUBLISHED · Your tile is eligible for a future community route.');
+      this.showPostPublishPrompt(response.tile);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Publish failed.';
       this.statusText?.setText(`Practice tile saved only in this session · ${message}`);
+    }
+  }
+
+  private showPostPublishPrompt(tile: CourseTile): void {
+    this.clearPostPublishPrompt();
+    const panel = this.add.graphics().setDepth(18);
+    panel
+      .fillStyle(COLORS.paper, 0.97)
+      .fillRoundedRect(206, 472, 868, 126, 18)
+      .lineStyle(3, COLORS.ink, 0.75)
+      .strokeRoundedRect(206, 472, 868, 126, 18);
+    const title = this.add
+      .text(234, 490, 'PUBLISHED · choose the next ride', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '18px',
+        fontStyle: 'bold',
+        color: '#243642',
+      })
+      .setDepth(19);
+    const note = this.add
+      .text(234, 520, 'Test rides are practice-only. Ranked rides use stored route revisions.', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '14px',
+        color: '#49626d',
+      })
+      .setDepth(19);
+
+    const testTile = createButton(
+      this,
+      330,
+      566,
+      180,
+      44,
+      'TEST MY TILE',
+      () => this.scene.start('Runner', { previewTile: tile, mode: 'preview' }),
+      { fill: COLORS.secondary, fontSize: 13, depth: 20 }
+    );
+    const rideToday = createButton(
+      this,
+      525,
+      566,
+      170,
+      44,
+      'RIDE TODAY',
+      () => void this.rideToday(),
+      { fill: COLORS.primary, fontSize: 13, depth: 20 }
+    );
+    const tryYesterday = createButton(
+      this,
+      714,
+      566,
+      178,
+      44,
+      'TRY YESTERDAY',
+      () => void this.tryYesterday(),
+      { fill: COLORS.reward, fontSize: 12, depth: 20 }
+    );
+    const roadbook = createButton(
+      this,
+      904,
+      566,
+      170,
+      44,
+      'ROADBOOK',
+      () => this.scene.start('Roadbook'),
+      { fill: COLORS.muted, fontSize: 13, depth: 20 }
+    );
+    this.postPublishObjects = [panel, title, note, testTile, rideToday, tryYesterday, roadbook];
+  }
+
+  private clearPostPublishPrompt(): void {
+    for (const object of this.postPublishObjects) object.destroy();
+    this.postPublishObjects = [];
+  }
+
+  private createLocalRoute(): RouteBundle {
+    return generateRoute({
+      tenant: { id: 'local-demo', name: 'Local Demo' },
+      dateKey: dateKeyUtc(),
+      communityTiles: [],
+    });
+  }
+
+  private async rideToday(): Promise<void> {
+    try {
+      const response = await apiClient.dailyRoute();
+      session.lastRoute = response.route;
+      this.scene.start('Runner', { route: response.route, mode: 'daily' });
+    } catch {
+      const route = session.bootstrap?.dailyRoute ?? session.lastRoute ?? this.createLocalRoute();
+      session.lastRoute = route;
+      this.scene.start('Runner', { route, mode: 'daily' });
+    }
+  }
+
+  private async tryYesterday(): Promise<void> {
+    try {
+      const response = await apiClient.routes();
+      const yesterday = dateKeyUtc(new Date(Date.now() - 86_400_000));
+      const route =
+        response.routes.find((entry) => entry.recipe.dateKey === yesterday) ??
+        response.routes.find((entry) => entry.recipe.dateKey < dateKeyUtc());
+      if (!route) {
+        this.statusText?.setText(
+          'No previous Roadbook route yet. Open Roadbook for available runs.'
+        );
+        return;
+      }
+      session.lastRoute = route;
+      this.scene.start('Runner', { route, mode: 'random' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Roadbook unavailable.';
+      this.statusText?.setText(`Try Yesterday unavailable · ${message}`);
     }
   }
 }

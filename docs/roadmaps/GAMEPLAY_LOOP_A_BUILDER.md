@@ -18,6 +18,7 @@ Open Builder
   → inspect safe-path overlay and metrics
   → test ride using Evergreen runner
   → revise or publish
+  → after publish, choose Test My Tile, Ride Today, Try Yesterday, or Roadbook
   → return later for feature/crossing outcome
 ```
 
@@ -148,6 +149,19 @@ The return screen should show:
 
 Only crossing count exists in the first code slice; route-choice analytics are a later event stream.
 
+## Post-publish play prompt
+
+Publishing should not dead-end the creator in the editor. After a certified tile is saved, show clear next actions:
+
+- `Test My Tile`: immediately play the tile inserted into a short test route. This is creator QA and must not create a ranked leaderboard entry.
+- `Ride Today`: start the current community route as a ranked run when the player is authenticated.
+- `Try Yesterday`: start the previous daily route if one exists in the local Roadbook.
+- `Open Roadbook`: browse today, yesterday, and older evergreen routes.
+
+The prompt reinforces the loop: create a small level insert, prove it is fair, then experience the subreddit’s current route. It also gives creators an obvious path to leaderboard play without implying that their just-published tile appears instantly in today’s route.
+
+Practice/test ride labels must remain explicit. Ranked runs only apply to stored route id + revision combinations issued by the server.
+
 ## Mobile interaction
 
 - Tap tool, then drag through cells.
@@ -155,6 +169,7 @@ Only crossing count exists in the first code slice; route-choice analytics are a
 - Long press is not required.
 - Locked connectors visibly reject paint.
 - Undo, redo, certified safe-path overlay, one-lane reaction margin, two-lane migration timing, camera-lookahead destination checks, reaction-margin lane/column issue evidence, and Builder issue-cell highlighting are implemented.
+- `ERASE FIX` clears the currently highlighted validator issue cell back to ordinary road when the highlighted cell is editable.
 - The editor must fit without page scrolling in expanded view.
 - Haptic feedback is optional and must not be assumed available.
 
@@ -184,6 +199,10 @@ Server rewrites identity and metadata, validates again, enforces one daily activ
 
 Feature notification, crossing counter, path-choice events, balanced-design achievement.
 
+### A6 — post-publish play continuation
+
+After publish, offer `Test My Tile`, `Ride Today`, `Try Yesterday`, and `Open Roadbook`. Test rides stay local/practice-only; ranked runs use server-issued route-revision tokens. Implemented locally on 2026-06-29; live persistence proof remains a separate QA gate.
+
 ## Acceptance criteria
 
 - A new player creates and publishes a valid tile in under two minutes.
@@ -191,3 +210,4 @@ Feature notification, crossing counter, path-choice events, balanced-design achi
 - Every published tile is cleanly reachable from all three entry lanes.
 - A tile is recognizable when rendered inside a generated route.
 - Removing a tile removes it from future use and repairs existing route recipes.
+- Publishing a tile presents clear next play actions without ranking practice/test rides.

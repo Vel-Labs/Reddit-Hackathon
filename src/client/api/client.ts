@@ -25,7 +25,15 @@ const requestJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
       ...(init?.headers ?? {}),
     },
   });
-  const body = (await response.json()) as T | ApiError;
+  const rawBody = await response.text();
+  let body: T | ApiError;
+  try {
+    body = JSON.parse(rawBody) as T | ApiError;
+  } catch {
+    throw new Error(
+      response.ok ? 'Server returned an unreadable response.' : 'Server unavailable.'
+    );
+  }
   if (
     !response.ok ||
     (typeof body === 'object' && body !== null && 'status' in body && body.status === 'error')

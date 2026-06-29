@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { apiClient } from '../api/client';
+import { kenneyTextureKey } from '../art/kenney';
 import { session } from '../state/session';
 import { COLORS, FONT_FAMILY } from '../theme';
 import { createButton } from '../ui/button';
@@ -10,12 +11,14 @@ import { dateKeyUtc } from '../../shared/game/seed';
 import { flattenRouteColumns } from '../../shared/game/tile';
 import type {
   CourseTile,
+  Feature,
   Lane,
   LaneInputEvent,
   RouteBundle,
   RunResult,
   RunSubmission,
 } from '../../shared/game/types';
+import type { KenneyRole } from '../art/kenney';
 
 type RunnerMode = 'daily' | 'random' | 'preview';
 
@@ -37,6 +40,7 @@ const COLUMN_WIDTH = 96;
 const BASE_COLUMNS_PER_SECOND = 2.75;
 const BOOST_COLUMNS_PER_SECOND = 4.1;
 const LANE_TWEEN_MS = 210;
+const FOUNDING_AUTHOR = 'daily-dash-founders';
 
 const makePreviewRoute = (tile: CourseTile): RouteBundle => {
   const flankA = FOUNDING_TILES[0];
@@ -76,15 +80,19 @@ export class RunnerScene extends Phaser.Scene {
   private player?: Phaser.GameObjects.Container;
   private courseGraphics?: Phaser.GameObjects.Graphics;
   private sceneryGraphics?: Phaser.GameObjects.Graphics;
-  private integrityText?: Phaser.GameObjects.Text;
+  private touchGuideGraphics?: Phaser.GameObjects.Graphics;
+  private pipGraphics?: Phaser.GameObjects.Graphics;
   private statsText?: Phaser.GameObjects.Text;
+  private controlsText?: Phaser.GameObjects.Text;
   private keyboard: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
   private touchUp?: Phaser.GameObjects.Zone;
   private touchDown?: Phaser.GameObjects.Zone;
+  private pointerStartY: number | undefined;
   private wheelA?: Phaser.GameObjects.Arc;
   private wheelB?: Phaser.GameObjects.Arc;
   private parcelVisual?: Phaser.GameObjects.Rectangle;
   private tileLabels = new Map<number, Phaser.GameObjects.Text>();
+  private routeSprites = new Map<string, Phaser.GameObjects.Image>();
   private feedbackText?: Phaser.GameObjects.Text;
   private feedbackTween?: Phaser.Tweens.Tween;
   private laneEvents: LaneInputEvent[] = [];
@@ -128,6 +136,8 @@ export class RunnerScene extends Phaser.Scene {
     this.drawStaticFrame();
     this.sceneryGraphics = this.add.graphics().setDepth(0);
     this.courseGraphics = this.add.graphics().setDepth(2);
+    this.touchGuideGraphics = this.add.graphics().setDepth(8);
+    this.pipGraphics = this.add.graphics().setDepth(10);
     this.tileLabels.clear();
     this.player = this.createCourier().setDepth(5);
     this.player.setPosition(PLAYER_X, LANE_Y[this.lane]);
@@ -135,11 +145,17 @@ export class RunnerScene extends Phaser.Scene {
     this.keyboard = this.input.keyboard?.createCursorKeys();
     this.input.keyboard?.on('keydown-W', () => this.requestLane(-1));
     this.input.keyboard?.on('keydown-S', () => this.requestLane(1));
-
-    this.touchUp = this.add.zone(1080, 250, 330, 250).setInteractive().setDepth(8);
-    this.touchDown = this.add.zone(1080, 505, 330, 250).setInteractive().setDepth(8);
-    this.touchUp.on('pointerdown', () => this.requestLane(-1));
-    this.touchDown.on('pointerdown', () => this.requestLane(1));
+    this.createTouchControls();
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      this.pointerStartY = pointer.y;
+    });
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (this.pointerStartY === undefined) return;
+      const deltaY = pointer.y - this.pointerStartY;
+      this.pointerStartY = undefined;
+      if (Math.abs(deltaY) < 38) return;
+      this.requestLane(deltaY < 0 ? -1 : 1);
+    });
 
     this.add
       .text(46, 28, this.routeTitle(), {
@@ -149,10 +165,18 @@ export class RunnerScene extends Phaser.Scene {
         color: '#243642',
       })
       .setDepth(9);
-    this.integrityText = this.add
-      .text(46, 66, '', {
+    this.add
+      .text(420, 70, this.routeMetaLabel(), {
         fontFamily: FONT_FAMILY,
-        fontSize: '22px',
+        fontSize: '15px',
+        fontStyle: 'bold',
+        color: '#49626d',
+      })
+      .setDepth(9);
+    this.add
+      .text(46, 66, 'PACKAGE INTEGRITY', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '18px',
         fontStyle: 'bold',
         color: '#243642',
       })
@@ -166,15 +190,26 @@ export class RunnerScene extends Phaser.Scene {
       })
       .setOrigin(1, 0)
       .setDepth(9);
-    this.add
-      .text(1230, 112, '▲\nMOVE UP\n\n▼\nMOVE DOWN', {
+    this.controlsText = this.add
+      .text(1230, 126, '▲\nUP\n\nSWIPE\nOR TAP\n\nDOWN\n▼', {
         fontFamily: FONT_FAMILY,
-        fontSize: '22px',
+        fontSize: '21px',
         fontStyle: 'bold',
         color: '#243642',
         align: 'center',
       })
       .setOrigin(1, 0)
+      .setDepth(9);
+    this.add
+      .text(580, 618, 'CRATE -1  ·  GAP -1  ·  PARCEL +350  ·  BOOST +75', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '18px',
+        fontStyle: 'bold',
+        color: '#243642',
+        backgroundColor: '#fff7dfcc',
+        padding: { x: 14, y: 7 },
+      })
+      .setOrigin(0.5, 0)
       .setDepth(9);
 
     createButton(this, 1120, 661, 250, 58, 'EXIT RUN', () => this.scene.start('Menu'), {
@@ -246,16 +281,16 @@ export class RunnerScene extends Phaser.Scene {
     if (!cell) return;
 
     if (cell.terrain === 'gap') {
-      this.takeDamage('MISSED ROAD', 900);
+      this.takeDamage('GAP RECOVERY -1', 900);
     } else if (cell.feature === 'obstacle') {
-      this.takeDamage('PACKAGE HIT', 540);
+      this.takeDamage('CRATE HIT -1', 540);
     } else if (cell.feature === 'boost') {
       this.boostUntilMs = Math.max(this.boostUntilMs, this.time.now + 1100);
       this.boostsTriggered += 1;
-      this.flashMessage('BOOST!');
+      this.flashMessage('BOOST + SPEED', COLORS.secondary);
     } else if (cell.feature === 'parcel') {
       this.parcelsCollected += 1;
-      this.flashMessage('+ PARCEL STAMP');
+      this.flashMessage('PARCEL +350', COLORS.reward);
     }
   }
 
@@ -275,7 +310,7 @@ export class RunnerScene extends Phaser.Scene {
     this.invulnerableUntilMs = this.time.now + 760;
     this.boostUntilMs = 0;
     this.cameras.main.shake(160, 0.006);
-    this.flashMessage(`${message} · ${Math.max(0, this.integrity)} PIPS LEFT`, COLORS.warning);
+    this.flashMessage(`${message} · ${Math.max(0, this.integrity)} LEFT`, COLORS.warning);
     if (this.player) {
       this.tweens.add({
         targets: this.player,
@@ -304,6 +339,7 @@ export class RunnerScene extends Phaser.Scene {
     graphics.clear();
     scenery.clear();
     this.hideTileLabels();
+    this.hideRouteSprites();
 
     this.drawProceduralScenery(scenery);
     const startColumn = Math.max(0, Math.floor(this.positionColumns) - 3);
@@ -321,6 +357,12 @@ export class RunnerScene extends Phaser.Scene {
           graphics
             .fillStyle(COLORS.ground, 1)
             .fillRect(x - COLUMN_WIDTH / 2, y + 24, COLUMN_WIDTH, 76);
+          this.showRouteSprite(`road:${columnIndex}:${laneIndex}`, 'road-surface', x, y + 50, {
+            width: 96,
+            height: 58,
+            alpha: 0.94,
+            depth: 2.2,
+          });
           graphics
             .fillStyle(COLORS.road, 1)
             .fillRoundedRect(x - COLUMN_WIDTH / 2, y + 14, COLUMN_WIDTH + 1, 18, 8);
@@ -332,20 +374,26 @@ export class RunnerScene extends Phaser.Scene {
         }
 
         if (cell.feature === 'obstacle') {
-          graphics.fillStyle(COLORS.warning, 1).fillRoundedRect(x - 19, y - 20, 38, 38, 6);
-          graphics.lineStyle(3, COLORS.ink, 1).strokeRoundedRect(x - 19, y - 20, 38, 38, 6);
-          graphics.lineStyle(2, COLORS.ink, 0.55).lineBetween(x - 15, y - 16, x + 15, y + 14);
+          if (!this.showFeatureSprite(columnIndex, laneIndex as Lane, cell.feature, x, y - 3)) {
+            graphics.fillStyle(COLORS.warning, 1).fillRoundedRect(x - 19, y - 20, 38, 38, 6);
+            graphics.lineStyle(3, COLORS.ink, 1).strokeRoundedRect(x - 19, y - 20, 38, 38, 6);
+            graphics.lineStyle(2, COLORS.ink, 0.55).lineBetween(x - 15, y - 16, x + 15, y + 14);
+          }
         } else if (cell.feature === 'boost') {
-          graphics
-            .fillStyle(COLORS.secondary, 1)
-            .fillTriangle(x - 26, y + 15, x + 26, y + 15, x, y - 17);
-          graphics
-            .lineStyle(2, COLORS.ink, 0.75)
-            .strokeTriangle(x - 26, y + 15, x + 26, y + 15, x, y - 17);
+          if (!this.showFeatureSprite(columnIndex, laneIndex as Lane, cell.feature, x, y - 1)) {
+            graphics
+              .fillStyle(COLORS.secondary, 1)
+              .fillTriangle(x - 26, y + 15, x + 26, y + 15, x, y - 17);
+            graphics
+              .lineStyle(2, COLORS.ink, 0.75)
+              .strokeTriangle(x - 26, y + 15, x + 26, y + 15, x, y - 17);
+          }
         } else if (cell.feature === 'parcel') {
-          graphics.fillStyle(COLORS.reward, 1).fillRoundedRect(x - 16, y - 25, 32, 29, 5);
-          graphics.lineStyle(2, COLORS.ink, 1).strokeRoundedRect(x - 16, y - 25, 32, 29, 5);
-          graphics.lineStyle(2, COLORS.ink, 0.55).lineBetween(x, y - 23, x, y + 2);
+          if (!this.showFeatureSprite(columnIndex, laneIndex as Lane, cell.feature, x, y - 11)) {
+            graphics.fillStyle(COLORS.reward, 1).fillRoundedRect(x - 16, y - 25, 32, 29, 5);
+            graphics.lineStyle(2, COLORS.ink, 1).strokeRoundedRect(x - 16, y - 25, 32, 29, 5);
+            graphics.lineStyle(2, COLORS.ink, 0.55).lineBetween(x, y - 23, x, y + 2);
+          }
         }
       }
 
@@ -387,6 +435,67 @@ export class RunnerScene extends Phaser.Scene {
     }
   }
 
+  private hideRouteSprites(): void {
+    for (const sprite of this.routeSprites.values()) {
+      sprite.setVisible(false);
+    }
+  }
+
+  private showFeatureSprite(
+    column: number,
+    lane: Lane,
+    feature: Feature,
+    x: number,
+    y: number
+  ): boolean {
+    if (feature === 'obstacle') {
+      return this.showRouteSprite(`feature:${column}:${lane}`, 'obstacle-crate', x, y, {
+        width: 44,
+        height: 44,
+        depth: 3.5,
+      });
+    }
+    if (feature === 'boost') {
+      return this.showRouteSprite(`feature:${column}:${lane}`, 'boost-marker', x, y, {
+        width: 50,
+        height: 50,
+        depth: 3.5,
+      });
+    }
+    if (feature === 'parcel') {
+      return this.showRouteSprite(`feature:${column}:${lane}`, 'collectible-stamp', x, y, {
+        width: 36,
+        height: 36,
+        depth: 3.5,
+      });
+    }
+    return false;
+  }
+
+  private showRouteSprite(
+    id: string,
+    role: KenneyRole,
+    x: number,
+    y: number,
+    options: { width: number; height: number; alpha?: number; depth?: number }
+  ): boolean {
+    const textureKey = kenneyTextureKey(role);
+    if (!this.textures.exists(textureKey)) return false;
+    const key = `${role}:${id}`;
+    let sprite = this.routeSprites.get(key);
+    if (!sprite) {
+      sprite = this.add.image(x, y, textureKey);
+      this.routeSprites.set(key, sprite);
+    }
+    sprite
+      .setPosition(x, y)
+      .setDisplaySize(options.width, options.height)
+      .setAlpha(options.alpha ?? 1)
+      .setDepth(options.depth ?? 3)
+      .setVisible(true);
+    return true;
+  }
+
   private showTileLabel(tileIndex: number, label: string, x: number): void {
     if (x < 0 || x > 1280) return;
     let text = this.tileLabels.get(tileIndex);
@@ -423,6 +532,37 @@ export class RunnerScene extends Phaser.Scene {
         .setVisible(false);
     }
     return this.feedbackText;
+  }
+
+  private createTouchControls(): void {
+    const graphics = this.touchGuideGraphics;
+    if (!graphics) return;
+    graphics.clear();
+    graphics
+      .fillStyle(COLORS.white, 0.34)
+      .fillRoundedRect(1060, 112, 190, 225, 18)
+      .fillRoundedRect(1060, 365, 190, 225, 18)
+      .lineStyle(3, COLORS.ink, 0.24)
+      .strokeRoundedRect(1060, 112, 190, 225, 18)
+      .strokeRoundedRect(1060, 365, 190, 225, 18);
+    graphics
+      .fillStyle(COLORS.secondary, 0.72)
+      .fillTriangle(1155, 150, 1118, 214, 1192, 214)
+      .fillTriangle(1155, 552, 1118, 488, 1192, 488);
+
+    this.touchUp = this.add.zone(1155, 224, 250, 255).setInteractive().setDepth(11);
+    this.touchDown = this.add.zone(1155, 488, 250, 255).setInteractive().setDepth(11);
+    this.touchUp.on('pointerup', (pointer: Phaser.Input.Pointer) =>
+      this.handleTouchTap(pointer, -1)
+    );
+    this.touchDown.on('pointerup', (pointer: Phaser.Input.Pointer) =>
+      this.handleTouchTap(pointer, 1)
+    );
+  }
+
+  private handleTouchTap(pointer: Phaser.Input.Pointer, direction: -1 | 1): void {
+    if (Math.abs(pointer.y - pointer.downY) >= 38) return;
+    this.requestLane(direction);
   }
 
   private flashMessage(message: string, color: number = COLORS.secondary): void {
@@ -475,15 +615,35 @@ export class RunnerScene extends Phaser.Scene {
   }
 
   private updateHud(): void {
-    const pips = Array.from({ length: 3 }, (_, index) => (index < this.integrity ? '■' : '□')).join(
-      ' '
-    );
-    this.integrityText?.setText(`PACKAGE ${pips}`);
+    this.drawIntegrityPips();
     const total = Math.max(1, this.columns.length);
     const progress = Phaser.Math.Clamp(Math.floor((this.positionColumns / total) * 100), 0, 100);
     this.statsText?.setText(
       `ROUTE ${progress}%\nPARCELS ${this.parcelsCollected}/${countRouteParcels(this.route)}`
     );
+    const laneName = this.targetLane === 0 ? 'TOP' : this.targetLane === 1 ? 'MIDDLE' : 'BOTTOM';
+    this.controlsText?.setText(`LANE\n${laneName}\n\n▲ UP\n\n▼ DOWN`);
+  }
+
+  private drawIntegrityPips(): void {
+    const graphics = this.pipGraphics;
+    if (!graphics) return;
+    graphics.clear();
+    for (let index = 0; index < 3; index += 1) {
+      const x = 240 + index * 42;
+      const filled = index < this.integrity;
+      graphics
+        .fillStyle(filled ? COLORS.reward : COLORS.white, filled ? 1 : 0.3)
+        .fillCircle(x, 76, 15)
+        .lineStyle(3, filled ? COLORS.ink : COLORS.warning, filled ? 0.95 : 0.75)
+        .strokeCircle(x, 76, 15);
+      if (!filled) {
+        graphics
+          .lineStyle(3, COLORS.warning, 0.85)
+          .lineBetween(x - 8, 68, x + 8, 84)
+          .lineBetween(x + 8, 68, x - 8, 84);
+      }
+    }
   }
 
   private routeTitle(): string {
@@ -494,6 +654,31 @@ export class RunnerScene extends Phaser.Scene {
           ? 'ROADBOOK SHUFFLE'
           : 'DAILY DASH';
     return `${prefix} · ${this.route.recipe.tenantName}`;
+  }
+
+  private routeMetaLabel(): string {
+    const communityTiles = this.route.tiles.filter((tile) => tile.authorId !== FOUNDING_AUTHOR);
+    const communityPercent =
+      this.route.tiles.length === 0
+        ? 0
+        : Math.round((communityTiles.length / this.route.tiles.length) * 100);
+    const difficultyValues: number[] = [];
+    for (const tile of this.route.tiles) {
+      if (typeof tile.metrics?.difficulty === 'number') {
+        difficultyValues.push(tile.metrics.difficulty);
+      }
+    }
+    const routeDifficulty =
+      difficultyValues.length === 0
+        ? 'TBD'
+        : `${Math.max(
+            1,
+            Math.round(
+              difficultyValues.reduce((total, difficulty) => total + difficulty, 0) /
+                difficultyValues.length
+            )
+          )}/5`;
+    return `${this.route.recipe.dateKey} · REV ${this.route.recipe.revision} · ${routeDifficulty} · ${communityPercent}% COMMUNITY`;
   }
 
   private async beginServerRun(): Promise<void> {

@@ -180,3 +180,35 @@ Add a short-lived, moderator-only diagnostics route or debug UI for local
 playtest builds if direct Redis key/value proof is required. Otherwise proceed
 with gameplay iteration; platform bootstrap is live-proven enough for ordinary
 development.
+
+## 2026-06-29 Gameplay Roadmap Pass
+
+Local implementation pass after live bootstrap proof.
+
+| Roadmap item                            | Result                         | Evidence / blocker                                                                                                                                            |
+| --------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runner first-run clarity                | LOCAL PASS                     | Runner now has larger integrity pips, persistent lane/touch controls, object legend, and event-specific damage/reward feedback.                               |
+| Runner mobile control polish            | LOCAL PASS / LIVE QA PENDING   | Large tap zones and vertical swipe support implemented. Needs Devvit mobile viewport and real Reddit mobile verification for gesture conflicts.               |
+| Post-publish play prompt                | LOCAL PASS                     | Builder publish success now offers `Test My Tile`, `Ride Today`, `Try Yesterday`, and `Roadbook`; preview/test rides use Runner `preview` mode.               |
+| Builder usability polish                | LOCAL PASS                     | `ERASE FIX` clears the highlighted editable validator issue cell back to ordinary road.                                                                       |
+| Sprite/art replacement pass             | LOCAL PASS                     | Runner road, crate, boost, and collectible visuals now use semantic Kenney roles when loaded and keep vector fallback. `npm run validate:art` passed.         |
+| Scoring/medal calibration               | LOCAL PASS / TELEMETRY PENDING | Local founding-style score sweep kept constants unchanged: no-reward clean run Bronze, partial rewards Silver, all source rewards Gold.                       |
+| Route presentation and attribution      | LOCAL PASS                     | Runner HUD now shows route date, revision, average difficulty, and community-authored percentage.                                                             |
+| Creator outcome loop                    | LOCAL PASS                     | Creator postcard entries now label featured status and clean-clear rate alongside crossings and path split.                                                   |
+| Live persistence proof through behavior | BLOCKED BY LIVE MANUAL QA      | Requires publishing through the Reddit playtest webview, reload, and observing Creator/Roadbook/tomorrow route behavior. No raw Redis diagnostics were added. |
+| Moderation/reporting QA                 | BLOCKED BY LIVE MODERATOR QA   | Requires live subreddit moderator context to exercise report/remove/route repair behavior.                                                                    |
+| Device matrix                           | BLOCKED BY DEVICE QA           | Local build passed; desktop Chrome, Devvit mobile viewport, and real mobile Reddit still need manual visual/input checks after this pass.                     |
+| Submission packaging                    | BLOCKED BY PROOF GATES         | Devpost-ready final links/demo should wait until persistence, moderation, and device checks are refreshed.                                                    |
+
+Commands run during this pass:
+
+```bash
+npm run check
+npm run type-check
+npm run lint
+npm run build
+npm run validate:art
+node --input-type=module - <<'NODE' # local scoring sweep
+```
+
+Known build warnings unchanged from prior baseline: Vite reports invalid `sourcemapFileNames` output option and deprecated `inlineDynamicImports`; build still completes.
