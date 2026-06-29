@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
+import { replayRun } from '../../shared/game/replay';
 import { scoreRun } from '../../shared/game/scoring';
-import type { RunResult, RunStart, RunSubmission } from '../../shared/game/types';
+import { flattenRouteColumns } from '../../shared/game/tile';
+import type { RouteBundle, RunResult, RunStart, RunSubmission } from '../../shared/game/types';
 import { tenantStore } from '../repositories/tenantStore';
 
 type StoredRunToken = {
   token: string;
   routeId: string;
+  routeRevision: number;
   userId: string;
   username: string;
   issuedAtMs: number;
@@ -24,6 +27,7 @@ export const createRun = async (
   const stored: StoredRunToken = {
     token,
     routeId,
+    routeRevision: route.recipe.revision,
     userId,
     username,
     issuedAtMs: now,
@@ -33,17 +37,27 @@ export const createRun = async (
   return {
     token,
     routeId,
+    routeRevision: stored.routeRevision,
     issuedAt: new Date(stored.issuedAtMs).toISOString(),
     expiresAt: new Date(stored.expiresAtMs).toISOString(),
   };
 };
 
-export const finishRun = async (submission: RunSubmission): Promise<RunResult> => {
+export const finishRun = async (
+  submission: RunSubmission,
+  route: RouteBundle
+): Promise<RunResult> => {
   const raw = await tenantStore.consumeRunToken(submission.token);
   if (!raw) throw new Error('Run token is missing, expired, or already used.');
   const stored = JSON.parse(raw) as StoredRunToken;
   if (stored.routeId !== submission.routeId)
     throw new Error('Run token does not match this route.');
+  if (
+    typeof submission.routeRevision === 'number' &&
+    stored.routeRevision !== submission.routeRevision
+  ) {
+    throw new Error('Run token does not match this route revision.');
+  }
   if (Date.now() > stored.expiresAtMs) throw new Error('Run token expired.');
 
   const serverElapsed = Date.now() - stored.issuedAtMs;
@@ -51,19 +65,25 @@ export const finishRun = async (submission: RunSubmission): Promise<RunResult> =
   if (submission.elapsedMs < 1_000 || elapsedDelta > 20_000) {
     throw new Error('Run timing failed validation.');
   }
-  if (submission.damageTaken < 0 || submission.damageTaken > 3)
-    throw new Error('Invalid damage count.');
-  if (submission.parcelsCollected < 0 || submission.parcelsCollected > 200)
-    throw new Error('Invalid parcel count.');
-  if (submission.boostsTriggered < 0 || submission.boostsTriggered > 200)
-    throw new Error('Invalid boost count.');
+  const replay = replayRun(flattenRouteColumns(route.tiles), submission.laneEvents ?? []);
+  if (!replay.ok) throw new Error(replay.message);
+
+  const authoritative: RunSubmission = {
+    ...submission,
+    routeRevision: stored.routeRevision,
+    damageTaken: replay.damageTaken,
+    parcelsCollected: replay.parcelsCollected,
+    boostsTriggered: replay.boostsTriggered,
+    completed: replay.completed,
+  };
 
   const completedAt = new Date().toISOString();
   return {
-    ...submission,
+    ...authoritative,
+    routeRevision: stored.routeRevision,
     userId: stored.userId,
     username: stored.username,
-    score: scoreRun(submission),
+    score: scoreRun(authoritative),
     completedAt,
   };
 };

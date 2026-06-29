@@ -68,27 +68,27 @@ Flag rather than automatically delete:
 
 ## Playability gates
 
-- Minimum lookahead remains constant at all boosts.
+- Minimum lookahead remains constant at all boosts; shared certification rejects forced switches into lanes hidden during the camera-lookahead window.
 - Lane tween completes before another forced switch.
 - No obstacle can damage multiple times during one invulnerability window.
 - Gaps always recover to a valid lane.
 - Tile seams reset transient state.
-- Route result uses the same revision the run began on.
+- Route result and leaderboard storage use the same revision the run began on.
+- Ranked score counters are derived from server replay of submitted lane events.
 
 ## Performance budgets
 
 - Inline entry excludes Phaser.
 - Expanded first interactive target under a few seconds on a typical mobile connection.
-- Route render uses pooled or redrawn objects; avoid creating persistent text labels every frame.
+- Route render uses pooled or redrawn objects; runner seam labels and feedback messages now reuse text objects instead of allocating transient labels during rendering.
 - No entire Kenney bundle in build.
 - API payloads comfortably below platform request limits.
 - Server endpoint work remains bounded; scheduled maintenance batches large work.
 
 ## Current scaffold caveats
 
-- Runner rendering is a functional vector prototype, not optimized pooling.
-- Result submission trusts summary statistics after timing checks; server-side input replay is still required for hardened competition.
-- Route leaderboard is not yet namespaced by revision.
-- Reaction-margin analysis is documented but not implemented.
+- Runner rendering is still a functional vector prototype, with initial text-object pooling in place for seam labels and feedback messages.
+- Result submission now uses server-side lane-event replay for score counters. Further hardening should calibrate speed/tween timing against live playtest telemetry.
+- Reaction-margin validation covers one-lane forced switches, same-direction two-lane migrations, camera-lookahead destination checks, lane/column issue evidence, and Builder issue-cell highlighting.
 
 These are explicit launch tasks, not hidden assumptions.

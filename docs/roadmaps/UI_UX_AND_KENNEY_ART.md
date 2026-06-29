@@ -4,7 +4,7 @@
 
 Daily Dash should look like a **handmade parcel-postcard arcade game**, not an untouched asset pack. Community-authored logic is rustic and grid-based; Kenney assets provide readable props and production value; a shared paper, ink, stamp, and cutout treatment makes them one identity.
 
-The repository begins in vector-fallback mode. Art replacement must never change collision, fairness, or tile serialization.
+The repository began in vector-fallback mode. A small CC0 Kenney Platformer Pack Redux meadow subset is now imported and preloaded behind semantic roles. Art replacement must never change collision, fairness, or tile serialization.
 
 ## Recommended Kenney source packs
 
@@ -63,6 +63,17 @@ Runtime code should request semantic roles, not raw filenames:
 ```
 
 `assets/kenney-manifest.json` is the canonical mapping. Missing mappings fall back to vector graphics. The manifest validator prevents silent broken paths.
+
+Current imported roles:
+
+- `road-surface`
+- `obstacle-crate`
+- `boost-marker`
+- `collectible-stamp`
+- `background-far`
+- `background-near`
+
+Courier, parcel, and UI roles still use vector fallback until a matching source family is selected.
 
 ## Runtime asset budget
 
@@ -148,8 +159,10 @@ A separate postcard when a submitted tile is selected:
 - section number;
 - crossings;
 - clean-clear rate;
-- path choice split later;
+- path choice split;
 - share/comment prompt that does not fabricate Reddit actions.
+
+The first-pass Creator postcard is available from the main menu and lists featured route sections, crossing count, clean crossing count, and top/middle/bottom lane-choice split. Route thumbnails and share prompts remain polish.
 
 ## Motion system
 
@@ -186,15 +199,15 @@ Reference canvas: 1280×720, scaled with `FIT`.
 
 ## Import workflow
 
-1. Choose one pack family and inspect its included license.
-2. Copy only selected source files into a staging folder outside `public/`.
-3. Rename to semantic snake-case names.
-4. Normalize scale and pivot assumptions.
-5. Pack sprites or copy optimized PNGs into `public/assets/kenney/`.
-6. Update `assets/kenney-manifest.json` and set mode to `kenney`.
-7. Run `npm run validate:art`.
-8. Test fallback by temporarily removing a mapping.
-9. Record pack, source URL, version/date, and license in third-party documentation.
+1. Choose one pack family and inspect its included license. Completed for Kenney Platformer Pack Redux.
+2. Copy only selected source files into a staging folder outside `public/`. Completed for a six-file meadow subset.
+3. Rename to semantic snake-case names. Completed.
+4. Normalize scale and pivot assumptions. Deferred until sprites replace vector rendering in-scene.
+5. Pack sprites or copy optimized PNGs into `public/assets/kenney/`. Completed with plain PNGs.
+6. Update `assets/kenney-manifest.json` and set mode to `kenney`. Completed.
+7. Run `npm run validate:art`. Passing.
+8. Test fallback by temporarily removing a mapping. Still pending.
+9. Record pack, source URL, version/date, and license in third-party documentation. Completed in `docs/art/THIRD_PARTY_ASSETS.md`.
 
 ## Definition of done
 

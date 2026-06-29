@@ -11,6 +11,7 @@ import { flattenRouteColumns } from '../../shared/game/tile';
 import type {
   CourseTile,
   Lane,
+  LaneInputEvent,
   RouteBundle,
   RunResult,
   RunSubmission,
@@ -26,6 +27,7 @@ type RunnerSceneData = {
 
 type ActiveRun = {
   token: string;
+  routeRevision: number;
   startedAtMs: number;
 };
 
@@ -60,7 +62,7 @@ export class RunnerScene extends Phaser.Scene {
   private route: RouteBundle = makeLocalRoute();
   private mode: RunnerMode = 'daily';
   private columns = flattenRouteColumns(this.route.tiles);
-  private activeRun: ActiveRun = { token: 'local-run', startedAtMs: 0 };
+  private activeRun: ActiveRun = { token: 'local-run', routeRevision: 1, startedAtMs: 0 };
   private lane: Lane = 1;
   private targetLane: Lane = 1;
   private positionColumns = 0;
@@ -82,6 +84,10 @@ export class RunnerScene extends Phaser.Scene {
   private wheelA?: Phaser.GameObjects.Arc;
   private wheelB?: Phaser.GameObjects.Arc;
   private parcelVisual?: Phaser.GameObjects.Rectangle;
+  private tileLabels = new Map<number, Phaser.GameObjects.Text>();
+  private feedbackText?: Phaser.GameObjects.Text;
+  private feedbackTween?: Phaser.Tweens.Tween;
+  private laneEvents: LaneInputEvent[] = [];
 
   constructor() {
     super('Runner');
@@ -109,6 +115,12 @@ export class RunnerScene extends Phaser.Scene {
     this.boostUntilMs = 0;
     this.invulnerableUntilMs = 0;
     this.complete = false;
+    this.laneEvents = [];
+    this.activeRun = {
+      token: 'local-run',
+      routeRevision: this.route.recipe.revision,
+      startedAtMs: 0,
+    };
   }
 
   create(): void {
@@ -116,6 +128,7 @@ export class RunnerScene extends Phaser.Scene {
     this.drawStaticFrame();
     this.sceneryGraphics = this.add.graphics().setDepth(0);
     this.courseGraphics = this.add.graphics().setDepth(2);
+    this.tileLabels.clear();
     this.player = this.createCourier().setDepth(5);
     this.player.setPosition(PLAYER_X, LANE_Y[this.lane]);
 
@@ -171,7 +184,11 @@ export class RunnerScene extends Phaser.Scene {
 
     this.updateHud();
     this.renderCourse();
-    this.activeRun = { token: 'local-run', startedAtMs: this.time.now };
+    this.activeRun = {
+      token: 'local-run',
+      routeRevision: this.route.recipe.revision,
+      startedAtMs: this.time.now,
+    };
     if (this.mode !== 'preview') void this.beginServerRun();
   }
 
@@ -208,6 +225,7 @@ export class RunnerScene extends Phaser.Scene {
     const next = Phaser.Math.Clamp(this.targetLane + direction, 0, 2) as Lane;
     if (next === this.targetLane) return;
     this.targetLane = next;
+    this.recordLaneEvent(next);
     this.tweens.killTweensOf(this.player);
     this.tweens.add({
       targets: this.player,
@@ -239,6 +257,16 @@ export class RunnerScene extends Phaser.Scene {
       this.parcelsCollected += 1;
       this.flashMessage('+ PARCEL STAMP');
     }
+  }
+
+  private recordLaneEvent(lane: Lane): void {
+    const column = Math.max(0, Math.floor(this.positionColumns));
+    const last = this.laneEvents.at(-1);
+    if (last?.column === column) {
+      last.lane = lane;
+      return;
+    }
+    this.laneEvents.push({ column, lane });
   }
 
   private takeDamage(message: string, slowdownMs: number): void {
@@ -275,6 +303,7 @@ export class RunnerScene extends Phaser.Scene {
     if (!graphics || !scenery) return;
     graphics.clear();
     scenery.clear();
+    this.hideTileLabels();
 
     this.drawProceduralScenery(scenery);
     const startColumn = Math.max(0, Math.floor(this.positionColumns) - 3);
@@ -323,13 +352,14 @@ export class RunnerScene extends Phaser.Scene {
       const tileWidth = this.route.tiles[0]?.width ?? 18;
       if (columnIndex > 0 && columnIndex % tileWidth === 0) {
         graphics.lineStyle(3, COLORS.ink, 0.24).lineBetween(x, 136, x, 598);
-        const tile = this.route.tiles[Math.floor(columnIndex / tileWidth)];
+        const tileIndex = Math.floor(columnIndex / tileWidth);
+        const tile = this.route.tiles[tileIndex];
         if (tile) {
           const authorLabel =
             tile.authorId === 'daily-dash-founders'
               ? 'FOUNDING TILE'
               : `BY ${tile.authorName.toUpperCase()}`;
-          this.addTransientTileLabel(authorLabel, x);
+          this.showTileLabel(tileIndex, authorLabel, x);
         }
       }
     }
@@ -351,20 +381,69 @@ export class RunnerScene extends Phaser.Scene {
     graphics.fillStyle(COLORS.skyDark, 0.18).fillTriangle(420, 370, 760, 145, 1100, 370);
   }
 
-  private addTransientTileLabel(label: string, x: number): void {
+  private hideTileLabels(): void {
+    for (const text of this.tileLabels.values()) {
+      text.setVisible(false);
+    }
+  }
+
+  private showTileLabel(tileIndex: number, label: string, x: number): void {
     if (x < 0 || x > 1280) return;
-    const key = `tile-label-${Math.floor((this.positionColumns + (x - PLAYER_X) / COLUMN_WIDTH) / 18)}`;
-    if (this.children.getByName(key)) return;
-    const text = this.add
-      .text(x + 8, 117, label, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '12px',
-        fontStyle: 'bold',
-        color: '#49626d',
-      })
-      .setName(key)
-      .setDepth(4);
-    this.time.delayedCall(1300, () => text.destroy());
+    let text = this.tileLabels.get(tileIndex);
+    if (!text) {
+      text = this.add
+        .text(x + 8, 117, label, {
+          fontFamily: FONT_FAMILY,
+          fontSize: '12px',
+          fontStyle: 'bold',
+          color: '#49626d',
+        })
+        .setDepth(4);
+      this.tileLabels.set(tileIndex, text);
+    }
+    text
+      .setText(label)
+      .setPosition(x + 8, 117)
+      .setVisible(true);
+  }
+
+  private getFeedbackText(): Phaser.GameObjects.Text {
+    if (!this.feedbackText) {
+      this.feedbackText = this.add
+        .text(580, 112, '', {
+          fontFamily: FONT_FAMILY,
+          fontSize: '24px',
+          fontStyle: 'bold',
+          color: '#72bf9b',
+          backgroundColor: '#fff7dfdd',
+          padding: { x: 14, y: 8 },
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(12)
+        .setVisible(false);
+    }
+    return this.feedbackText;
+  }
+
+  private flashMessage(message: string, color: number = COLORS.secondary): void {
+    const text = this.getFeedbackText();
+    this.feedbackTween?.stop();
+    text
+      .setText(message)
+      .setColor(`#${color.toString(16).padStart(6, '0')}`)
+      .setPosition(580, 112)
+      .setAlpha(1)
+      .setVisible(true);
+    this.feedbackTween = this.tweens.add({
+      targets: text,
+      alpha: 0,
+      y: 88,
+      delay: 550,
+      duration: 350,
+      onComplete: () => {
+        text.setVisible(false).setPosition(580, 112);
+      },
+    });
   }
 
   private createCourier(): Phaser.GameObjects.Container {
@@ -407,28 +486,6 @@ export class RunnerScene extends Phaser.Scene {
     );
   }
 
-  private flashMessage(message: string, color: number = COLORS.secondary): void {
-    const text = this.add
-      .text(580, 112, message, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '24px',
-        fontStyle: 'bold',
-        color: `#${color.toString(16).padStart(6, '0')}`,
-        backgroundColor: '#fff7dfdd',
-        padding: { x: 14, y: 8 },
-      })
-      .setOrigin(0.5, 0)
-      .setDepth(12);
-    this.tweens.add({
-      targets: text,
-      alpha: 0,
-      y: 88,
-      delay: 550,
-      duration: 350,
-      onComplete: () => text.destroy(),
-    });
-  }
-
   private routeTitle(): string {
     const prefix =
       this.mode === 'preview'
@@ -442,9 +499,17 @@ export class RunnerScene extends Phaser.Scene {
   private async beginServerRun(): Promise<void> {
     try {
       const response = await apiClient.startRun(this.route.recipe.id);
-      this.activeRun = { token: response.run.token, startedAtMs: this.time.now };
+      this.activeRun = {
+        token: response.run.token,
+        routeRevision: response.run.routeRevision,
+        startedAtMs: this.time.now,
+      };
     } catch {
-      this.activeRun = { token: 'local-run', startedAtMs: this.time.now };
+      this.activeRun = {
+        token: 'local-run',
+        routeRevision: this.route.recipe.revision,
+        startedAtMs: this.time.now,
+      };
     }
   }
 
@@ -455,11 +520,13 @@ export class RunnerScene extends Phaser.Scene {
     const submission: RunSubmission = {
       token: this.activeRun.token,
       routeId: this.route.recipe.id,
+      routeRevision: this.activeRun.routeRevision,
       elapsedMs,
       damageTaken: 3 - this.integrity,
       parcelsCollected: this.parcelsCollected,
       boostsTriggered: this.boostsTriggered,
       completed,
+      laneEvents: [...this.laneEvents],
     };
 
     let result: RunResult = {

@@ -16,6 +16,20 @@
   "properties": {
     "token": { "type": "string", "minLength": 1, "maxLength": 160 },
     "routeId": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "routeRevision": { "type": "integer", "minimum": 1 },
+    "laneEvents": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["column", "lane"],
+        "properties": {
+          "column": { "type": "integer", "minimum": 0 },
+          "lane": { "type": "integer", "minimum": 0, "maximum": 2 }
+        }
+      }
+    },
     "elapsedMs": { "type": "integer", "minimum": 1, "maximum": 900000 },
     "damageTaken": { "type": "integer", "minimum": 0, "maximum": 3 },
     "parcelsCollected": { "type": "integer", "minimum": 0, "maximum": 200 },

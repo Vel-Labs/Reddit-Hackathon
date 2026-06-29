@@ -55,14 +55,19 @@ export class MenuScene extends Phaser.Scene {
       { fill: COLORS.secondary }
     );
 
-    createButton(this, 300, 480, 360, 72, 'ROADBOOK SHUFFLE', () => void this.rideRandomRoute(), {
+    createButton(this, 300, 480, 360, 72, 'ROADBOOK', () => this.scene.start('Roadbook'), {
       fill: COLORS.primary,
       fontSize: 22,
     });
 
-    createButton(this, 300, 570, 360, 64, 'ACHIEVEMENTS', () => this.scene.start('Achievements'), {
+    createButton(this, 300, 570, 170, 64, 'CREATOR', () => this.scene.start('Creator'), {
       fill: COLORS.reward,
-      fontSize: 21,
+      fontSize: 18,
+    });
+
+    createButton(this, 493, 570, 174, 64, 'BADGES', () => this.scene.start('Achievements'), {
+      fill: COLORS.reward,
+      fontSize: 18,
     });
 
     this.statusText = this.add
@@ -84,19 +89,6 @@ export class MenuScene extends Phaser.Scene {
       dateKey: dateKeyUtc(),
       communityTiles: [],
     });
-  }
-
-  private async rideRandomRoute(): Promise<void> {
-    this.statusText?.setText('Opening a route from this community’s Roadbook…');
-    try {
-      const response = await apiClient.randomRoute();
-      session.lastRoute = response.route;
-      this.scene.start('Runner', { route: response.route, mode: 'random' });
-    } catch {
-      const route = this.createLocalRoute();
-      session.lastRoute = route;
-      this.scene.start('Runner', { route, mode: 'random' });
-    }
   }
 
   private async loadBootstrap(): Promise<void> {

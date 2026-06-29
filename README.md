@@ -17,7 +17,7 @@ The repository includes:
 - achievement definitions and progress evaluation;
 - tile deletion and route recompilation;
 - a disabled World Tour adapter for a future shared cross-community catalog;
-- vector fallback art plus a curated Kenney import pipeline;
+- vector fallback art plus a small licensed Kenney meadow subset;
 - product, architecture, governance, contracts, and detailed delivery roadmaps.
 
 ## Architecture
@@ -64,15 +64,17 @@ npm run prettier:check
 
 `npm run check` runs the complete sequence.
 
-## Kenney art
+## Kenney Art
 
-The game intentionally runs without third-party binaries. Vector fallback makes every screen functional. To layer in a curated art kit, follow [`docs/art/KENNEY_IMPORT_GUIDE.md`](docs/art/KENNEY_IMPORT_GUIDE.md), copy selected files to `public/assets/kenney/`, and update `assets/kenney-manifest.json`.
+A small CC0 Kenney Platformer Pack Redux meadow subset is bundled under `public/assets/kenney/` and mapped through `assets/kenney-manifest.json`. Vector fallback still makes every screen functional when a semantic role is unmapped.
 
-Do not copy an entire All-in-1 archive into the client bundle.
+Do not copy an entire All-in-1 archive into the client bundle. See [`docs/art/THIRD_PARTY_ASSETS.md`](docs/art/THIRD_PARTY_ASSETS.md) and [`docs/art/KENNEY_IMPORT_GUIDE.md`](docs/art/KENNEY_IMPORT_GUIDE.md).
 
 ## Product roadmaps
 
 Start with [`docs/roadmaps/README.md`](docs/roadmaps/README.md). The key streams are Builder, Evergreen Runner, UI/UX and Kenney art, achievements, data/level generation, multi-tenancy/World Tour, fairness, moderation, and hackathon delivery.
+
+Hackathon submission constraints are tracked in [`docs/hackathon/RULES_COMPLIANCE.md`](docs/hackathon/RULES_COMPLIANCE.md) and [`docs/hackathon/SUBMISSION_CHECKLIST.md`](docs/hackathon/SUBMISSION_CHECKLIST.md). Recheck the live official rules and Devvit Rules before any final submission or public-readiness claim.
 
 ## Tenant model
 
@@ -81,9 +83,9 @@ Every subreddit installation is a separate tenant. Local routes, tiles, profiles
 ## Important prototype limitations
 
 - The shared tile/route logic has been locally compiled and exercised, but this generated artifact has not been installed into a live Devvit playtest in this environment.
-- The runner submits summary counters with timing sanity checks. A hardened ranked release should submit lane-input events and replay them server-side.
-- Reaction-window fairness, undo/redo, Roadbook list UI, report UI, and leaderboard-by-route-revision are documented launch tasks, not yet complete scenes.
-- Kenney binary assets are not bundled.
+- The runner submits lane-input events and server replay derives ranked score counters; speed/tween calibration still needs live playtest telemetry.
+- Live Devvit validation and speed/tween calibration against platform telemetry remain launch tasks.
+- Kenney binary import is intentionally small; several semantic roles still use vector fallback.
 
 ## License
 

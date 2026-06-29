@@ -135,15 +135,15 @@ Ghosts are optional for launch. A compact input-event replay is preferable to st
 
 ## Server trust boundary
 
-The server issues one-use run tokens and sanity-checks timing and result ranges. The scaffold does not yet submit a full deterministic input trace, so it is appropriate for a hackathon leaderboard rather than a high-stakes competitive economy.
+The server issues one-use run tokens, sanity-checks timing, and replays bounded lane-change events against stored route geometry. Ranked damage, parcels, boosts, completion, and score are derived server-side.
 
 Hardening path:
 
-1. Store route version and compiler version in token.
-2. Submit lane-change input events with timestamps/columns.
-3. Replay the logical simulator server-side.
-4. Derive damage, parcels, boosts, and completion from replay.
-5. Reject impossible speed or lane transitions.
+1. Store route version and compiler version in token. Implemented for route revision.
+2. Submit lane-change input events with columns. Implemented in compact column-indexed form.
+3. Replay the logical simulator server-side. Implemented for route cells and lane transitions.
+4. Derive damage, parcels, boosts, and completion from replay. Implemented for ranked submissions.
+5. Reject impossible speed or lane transitions. Lane transitions are checked; speed/tween calibration remains launch hardening.
 
 ## Accessibility
 
@@ -171,7 +171,7 @@ Run tokens, result validation, profile, leaderboard, personal best.
 
 ### B4 — Roadbook
 
-Route list, filters, medals, revision labels, random local route.
+Route list, selected-route details, revision-scoped leaderboard panel, revision labels, and random local route are implemented in first-pass form. Filters, medal state, and personal best remain launch polish.
 
 ### B5 — mastery
 

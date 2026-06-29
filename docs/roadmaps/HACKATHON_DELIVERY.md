@@ -1,6 +1,6 @@
 # Hackathon Delivery Roadmap
 
-Current planning date: **June 25, 2026**. Submission target from the brief: **July 15, 2026**.
+Current planning date: **June 25, 2026**. Submission target from the official rules: **July 15, 2026 at 6:00 pm PT**. Before any final submission claim, review [`../hackathon/RULES_COMPLIANCE.md`](../hackathon/RULES_COMPLIANCE.md) against the live rules and Devvit Rules.
 
 ## June 25–27 — prove the artifact
 
@@ -17,7 +17,7 @@ Gate: no persistence or achievements work can compensate for an unfun tile-to-ru
 - Undo/redo and safe-path overlay.
 - Lane lookahead and reaction-margin validator.
 - Runner collision/recovery polish.
-- One full Kenney-derived biome.
+- Small Kenney-derived meadow subset imported; full in-scene sprite replacement remains polish.
 - Tutorial through action, not modal paragraphs.
 - Result score tuning across founding routes.
 
@@ -62,6 +62,7 @@ World Tour remains a document/adapter unless all local gates are green.
 - Deploy final version.
 - Create public demo post with founding route history already visible.
 - Verify app listing, permissions, rules, privacy/deletion behavior.
+- Verify Devpost package: app listing link, public test subreddit, public game post, README, text description, and optional sub-one-minute demo video.
 - Record short demo capture only if submission allows/benefits.
 - Fix submission blockers only.
 

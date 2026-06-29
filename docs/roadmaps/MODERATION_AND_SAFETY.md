@@ -9,8 +9,8 @@ Builders can only place predefined terrain and feature tokens in a 3×18 grid. T
 ### Player
 
 - Remove my tile.
-- Report route/tile.
-- See source community and route revision.
+- Report route/tile with structured reason codes.
+- See source community and route revision in Roadbook.
 - Understand whether a tile may enter World Tour.
 
 ### Moderator
@@ -45,6 +45,13 @@ A user deletion marks content removed and prevents future render. Route recipes 
 ## Safety UX
 
 Reports should be accessible from route info rather than during high-speed play. Confirmation explains what will happen and avoids public accusation. Creator attribution can be hidden on removed/quarantined content.
+
+## Current scaffold status
+
+- Roadbook exposes a tile review panel with source, route revision, fixed report reason choices, report submission, and a removal action.
+- Reports are stored as structured Redis records; there is still no free text, upload, custom drawing, URL, or chat surface.
+- Tile removal marks content removed, actions open reports for that tile, and triggers route repair.
+- Moderator authorization uses Devvit moderator lookup when available and fails closed until live OAuth/playtest verifies the platform permission behavior.
 
 ## Launch gate
 

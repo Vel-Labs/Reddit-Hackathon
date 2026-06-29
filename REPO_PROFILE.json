@@ -33,7 +33,7 @@
   "risks": [
     "Devvit live playtest not yet verified in this generated package",
     "ranked run outcomes need server-side input replay hardening",
-    "reaction-margin fairness pass is not yet implemented",
+    "live speed/tween calibration still needs platform playtest telemetry",
     "World Tour requires external shared service and is disabled",
     "third-party binary art is intentionally not bundled"
   ]

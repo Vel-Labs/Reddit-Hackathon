@@ -1,8 +1,15 @@
 {
   "version": 1,
-  "mode": "vector-fallback",
-  "license": "CC0 packs must be verified from each downloaded Kenney pack's license file before import.",
-  "packs": [],
+  "mode": "kenney",
+  "license": "Selected Kenney Platformer Pack Redux assets are CC0; license copied to docs/art/licenses/kenney-platformer-redux-cc0.txt.",
+  "packs": [
+    {
+      "name": "Platformer Pack Redux",
+      "license": "CC0",
+      "source": "https://opengameart.org/content/platformer-pack-redux-360-assets",
+      "licenseFile": "docs/art/licenses/kenney-platformer-redux-cc0.txt"
+    }
+  ],
   "requiredRoles": [
     "courier-body",
     "parcel",
@@ -15,5 +22,12 @@
     "ui-panel",
     "ui-button"
   ],
-  "mappings": {}
+  "mappings": {
+    "road-surface": "terrain/grass-mid.png",
+    "obstacle-crate": "props/crate.png",
+    "boost-marker": "effects/spring.png",
+    "collectible-stamp": "items/coin-gold.png",
+    "background-far": "backgrounds/blue-grass.png",
+    "background-near": "terrain/grass-center.png"
+  }
 }

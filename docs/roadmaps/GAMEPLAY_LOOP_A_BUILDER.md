@@ -88,21 +88,21 @@ The author must complete one test ride. This is not sufficient security by itsel
 
 ### Human-fair hardening
 
-The initial solver proves reachability. Before launch, add a reaction-margin pass that rejects mandatory switches without sufficient visible lead time. Target tuning:
+The initial solver proves reachability. A reaction-margin pass now rejects mandatory switches without sufficient visible lead time. Target tuning:
 
-- one-lane forced switch: at least two columns of warning;
-- two-lane migration: at least four columns;
+- one-lane forced switch: at least two columns of warning (implemented);
+- two-lane migration: at least four columns (implemented);
 - no consecutive forced switches during lane transition;
-- safe route remains visible within the camera lookahead;
+- safe route remains visible within the camera lookahead (implemented);
 - boost state resets before the connector zone.
 
 ## Feedback hierarchy
 
 The validator must explain the next useful action, not only return “invalid.”
 
-1. Hard blocking error at the exact lane/column.
-2. Highlighted cells implicated in the failure.
-3. Green safe-path overlay when certified.
+1. Hard blocking error at the exact lane/column. Reaction-margin issues now carry lane/column evidence.
+2. Highlighted cells implicated in the failure. Builder certification failures now draw a warning highlight on the implicated cell when validator evidence is available.
+3. Green safe-path overlay when certified. Implemented overlay paths come from shared deterministic movement logic, not client-only heuristics.
 4. Gold high-reward path overlay as a non-authoritative suggestion.
 5. Summary: clean path count, entry coverage, difficulty, budget, risk score.
 
@@ -154,7 +154,7 @@ Only crossing count exists in the first code slice; route-choice analytics are a
 - A cell changes only once per continuous drag to avoid oscillation.
 - Long press is not required.
 - Locked connectors visibly reject paint.
-- Undo and redo are launch-required even though the scaffold currently uses Road as the reset tool.
+- Undo, redo, certified safe-path overlay, one-lane reaction margin, two-lane migration timing, camera-lookahead destination checks, reaction-margin lane/column issue evidence, and Builder issue-cell highlighting are implemented.
 - The editor must fit without page scrolling in expanded view.
 - Haptic feedback is optional and must not be assumed available.
 

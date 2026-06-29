@@ -1,4 +1,5 @@
 import {
+  CAMERA_LOOKAHEAD_COLUMNS,
   ENTRY_BUFFER_COLUMNS,
   EXIT_BUFFER_COLUMNS,
   LANE_CHANGE_COOLDOWN_COLUMNS,
@@ -8,6 +9,7 @@ import {
   MAX_GAPS,
   MAX_OBSTACLES,
   MAX_PARCELS,
+  REACTION_MARGIN_COLUMNS,
   TILE_WIDTH,
 } from './constants';
 import {
@@ -22,6 +24,8 @@ import type {
   Cell,
   CourseTile,
   Lane,
+  SafePath,
+  SafePathPoint,
   TileMetrics,
   TileValidationResult,
   ValidationIssue,
@@ -32,6 +36,25 @@ type SolverState = {
   cooldown: number;
 };
 
+type MoveDirection = -1 | 1;
+
+type FairPathEntry = {
+  state: SolverState;
+  points: SafePathPoint[];
+  lastMoveDirection?: MoveDirection;
+  migrationStartColumn?: number;
+};
+
+type FairPathFailure = {
+  lane: Lane;
+  column: number;
+};
+
+type FairPathResult = {
+  paths: SafePath[];
+  firstFailure?: FairPathFailure;
+};
+
 type GridSolveResult = {
   cleanPathCount: number;
   entryLaneCoverage: number;
@@ -40,6 +63,9 @@ type GridSolveResult = {
 };
 
 const stateKey = (state: SolverState): string => `${state.lane}:${state.cooldown}`;
+
+const fairPathKey = (entry: FairPathEntry): string =>
+  [stateKey(entry.state), entry.lastMoveDirection ?? 0, entry.migrationStartColumn ?? -1].join(':');
 
 const laneFromNumber = (value: number): Lane =>
   Math.max(0, Math.min(LANE_COUNT - 1, value)) as Lane;
@@ -56,6 +82,68 @@ const nextStates = (state: SolverState): SolverState[] => {
     }
   }
   return states;
+};
+
+const findReactionMarginFailure = (
+  columns: Cell[][],
+  fromLane: Lane,
+  transitionColumn: number
+): FairPathFailure | undefined => {
+  for (
+    let column = transitionColumn;
+    column < transitionColumn + REACTION_MARGIN_COLUMNS;
+    column += 1
+  ) {
+    const cell = columns[column]?.[fromLane];
+    if (!cell) continue;
+    if (!isCleanCell(cell)) return { lane: fromLane, column };
+  }
+  return undefined;
+};
+
+const findCameraLookaheadFailure = (
+  columns: Cell[][],
+  toLane: Lane,
+  transitionColumn: number
+): FairPathFailure | undefined => {
+  for (
+    let column = transitionColumn - CAMERA_LOOKAHEAD_COLUMNS;
+    column < transitionColumn;
+    column += 1
+  ) {
+    if (column < ENTRY_BUFFER_COLUMNS) continue;
+    const cell = columns[column]?.[toLane];
+    if (!cell) continue;
+    if (!isCleanCell(cell)) return { lane: toLane, column };
+  }
+  return undefined;
+};
+
+const hasMigrationMargin = (
+  entry: FairPathEntry,
+  direction: MoveDirection,
+  column: number
+): boolean =>
+  entry.lastMoveDirection !== direction ||
+  entry.migrationStartColumn === undefined ||
+  column - entry.migrationStartColumn >= REACTION_MARGIN_COLUMNS * 2;
+
+const migrationMarginFailure = (
+  entry: FairPathEntry,
+  column: number,
+  width: number
+): FairPathFailure | undefined =>
+  entry.migrationStartColumn === undefined || column >= width - EXIT_BUFFER_COLUMNS
+    ? undefined
+    : { lane: entry.state.lane, column };
+
+const laterFailure = (
+  current: FairPathFailure | undefined,
+  candidate: FairPathFailure | undefined
+): FairPathFailure | undefined => {
+  if (!candidate) return current;
+  if (!current || candidate.column > current.column) return candidate;
+  return current;
 };
 
 export const solveColumns = (columns: Cell[][]): GridSolveResult => {
@@ -146,6 +234,175 @@ const tileColumns = (tile: CourseTile): Cell[][] =>
       (_, lane) => tile.lanes[lane]?.[column] ?? { terrain: 'gap', feature: 'none' }
     )
   );
+
+export const findCleanPathsByEntrance = (tile: CourseTile): SafePath[] => {
+  const columns = tileColumns(tile);
+  const paths: SafePath[] = [];
+
+  for (let startLane = 0; startLane < LANE_COUNT; startLane += 1) {
+    const initialCell = columns[0]?.[startLane];
+    if (!initialCell || !isCleanCell(initialCell)) continue;
+
+    const initialState: SolverState = { lane: startLane as Lane, cooldown: 0 };
+    let clean = new Map<string, { state: SolverState; points: SafePathPoint[] }>();
+    clean.set(stateKey(initialState), {
+      state: initialState,
+      points: [{ lane: initialState.lane, column: 0 }],
+    });
+
+    for (let column = 1; column < columns.length; column += 1) {
+      const nextClean = new Map<string, { state: SolverState; points: SafePathPoint[] }>();
+      for (const entry of clean.values()) {
+        for (const candidate of nextStates(entry.state)) {
+          const cell = columns[column]?.[candidate.lane];
+          if (!cell || !isCleanCell(cell)) continue;
+          const key = stateKey(candidate);
+          if (nextClean.has(key)) continue;
+          nextClean.set(key, {
+            state: candidate,
+            points: [...entry.points, { lane: candidate.lane, column }],
+          });
+        }
+      }
+      clean = nextClean;
+      if (clean.size === 0) break;
+    }
+
+    const firstPath = clean.values().next().value;
+    if (firstPath) {
+      paths.push({
+        entranceLane: startLane as Lane,
+        points: firstPath.points,
+      });
+    }
+  }
+
+  return paths;
+};
+
+const solveFairCleanPathsByEntrance = (tile: CourseTile): FairPathResult => {
+  const columns = tileColumns(tile);
+  const paths: SafePath[] = [];
+  let firstFailure: FairPathFailure | undefined;
+
+  for (let startLane = 0; startLane < LANE_COUNT; startLane += 1) {
+    const initialCell = columns[0]?.[startLane];
+    if (!initialCell || !isCleanCell(initialCell)) continue;
+
+    const initialState: SolverState = { lane: startLane as Lane, cooldown: 0 };
+    let clean = new Map<string, FairPathEntry>();
+    const initialEntry: FairPathEntry = {
+      state: initialState,
+      points: [{ lane: initialState.lane, column: 0 }],
+    };
+    clean.set(fairPathKey(initialEntry), initialEntry);
+
+    for (let column = 1; column < columns.length; column += 1) {
+      const nextClean = new Map<string, FairPathEntry>();
+      for (const entry of clean.values()) {
+        for (const candidate of nextStates(entry.state)) {
+          const cell = columns[column]?.[candidate.lane];
+          if (!cell || !isCleanCell(cell)) continue;
+          let lastMoveDirection = entry.lastMoveDirection;
+          let migrationStartColumn = entry.migrationStartColumn;
+          if (candidate.lane !== entry.state.lane) {
+            const direction: MoveDirection = candidate.lane > entry.state.lane ? 1 : -1;
+            const reactionFailure = findReactionMarginFailure(columns, entry.state.lane, column);
+            if (reactionFailure) {
+              firstFailure = laterFailure(firstFailure, reactionFailure);
+              continue;
+            }
+            const lookaheadFailure = findCameraLookaheadFailure(columns, candidate.lane, column);
+            if (lookaheadFailure) {
+              firstFailure = laterFailure(firstFailure, lookaheadFailure);
+              continue;
+            }
+            if (!hasMigrationMargin(entry, direction, column)) {
+              firstFailure = laterFailure(
+                firstFailure,
+                migrationMarginFailure(entry, column, columns.length)
+              );
+              continue;
+            }
+            lastMoveDirection = direction;
+            migrationStartColumn =
+              entry.lastMoveDirection === direction ? entry.migrationStartColumn : column;
+          }
+          const nextEntry: FairPathEntry = {
+            state: candidate,
+            points: [...entry.points, { lane: candidate.lane, column }],
+          };
+          if (lastMoveDirection !== undefined) {
+            nextEntry.lastMoveDirection = lastMoveDirection;
+          }
+          if (migrationStartColumn !== undefined) {
+            nextEntry.migrationStartColumn = migrationStartColumn;
+          }
+          const key = fairPathKey(nextEntry);
+          if (nextClean.has(key)) continue;
+          nextClean.set(key, nextEntry);
+        }
+      }
+      clean = nextClean;
+      if (clean.size === 0) break;
+    }
+
+    const firstPath = clean.values().next().value;
+    if (firstPath) {
+      paths.push({
+        entranceLane: startLane as Lane,
+        points: firstPath.points,
+      });
+    }
+  }
+
+  if (firstFailure) {
+    return { paths, firstFailure };
+  }
+  return { paths };
+};
+
+export const findFairCleanPathsByEntrance = (tile: CourseTile): SafePath[] =>
+  solveFairCleanPathsByEntrance(tile).paths;
+
+const findCleanPathFairnessFailure = (tile: CourseTile): FairPathFailure | undefined => {
+  const columns = tileColumns(tile);
+  let failure: FairPathFailure | undefined;
+  for (const path of findCleanPathsByEntrance(tile)) {
+    let lastMoveDirection: MoveDirection | undefined;
+    let migrationStartColumn: number | undefined;
+    for (let index = 1; index < path.points.length; index += 1) {
+      const previous = path.points[index - 1];
+      const current = path.points[index];
+      if (!previous || !current || previous.lane === current.lane) continue;
+
+      const direction: MoveDirection = current.lane > previous.lane ? 1 : -1;
+      const reactionFailure = findReactionMarginFailure(columns, previous.lane, current.column);
+      failure = laterFailure(failure, reactionFailure);
+      if (reactionFailure) continue;
+
+      const lookaheadFailure = findCameraLookaheadFailure(columns, current.lane, current.column);
+      failure = laterFailure(failure, lookaheadFailure);
+      if (lookaheadFailure) continue;
+
+      if (
+        lastMoveDirection === direction &&
+        migrationStartColumn !== undefined &&
+        current.column - migrationStartColumn < REACTION_MARGIN_COLUMNS * 2
+      ) {
+        failure = laterFailure(failure, { lane: previous.lane, column: current.column });
+        continue;
+      }
+
+      const sameDirection = lastMoveDirection === direction;
+      migrationStartColumn = sameDirection
+        ? (migrationStartColumn ?? current.column)
+        : current.column;
+      lastMoveDirection = direction;
+    }
+  }
+  return failure;
+};
 
 const countHazards = (tile: CourseTile): number =>
   tile.lanes.reduce(
@@ -291,6 +548,20 @@ export const validateCourseTile = (tile: CourseTile): TileValidationResult => {
       code: 'forced-damage',
       message: 'The best route still takes damage. Certified tiles must be cleanly completable.',
     });
+  }
+  const fairResult = solveFairCleanPathsByEntrance(tile);
+  if (fairResult.paths.length < LANE_COUNT) {
+    const failure = findCleanPathFairnessFailure(tile) ?? fairResult.firstFailure;
+    const issue: ValidationIssue = {
+      severity: 'error',
+      code: 'reaction-margin',
+      message: `Forced lane switches need at least ${REACTION_MARGIN_COLUMNS} clean columns of warning.`,
+    };
+    if (failure) {
+      issue.lane = failure.lane;
+      issue.column = failure.column;
+    }
+    issues.push(issue);
   }
 
   const hazardCount = countHazards(tile);

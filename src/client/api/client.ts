@@ -3,8 +3,14 @@ import type {
   BootstrapResponse,
   CompleteRunRequest,
   CompleteRunResponse,
+  CreatorOutcomeResponse,
   LeaderboardResponse,
+  RemoveTileRequest,
+  RemoveTileResponse,
+  ReportTileRequest,
+  ReportTileResponse,
   RouteResponse,
+  RoutesResponse,
   StartRunResponse,
   SubmitTileRequest,
   SubmitTileResponse,
@@ -33,7 +39,9 @@ const requestJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
 export const apiClient = {
   bootstrap: (): Promise<BootstrapResponse> => requestJson('/api/bootstrap'),
   dailyRoute: (): Promise<RouteResponse> => requestJson('/api/routes/daily'),
+  routes: (): Promise<RoutesResponse> => requestJson('/api/routes'),
   randomRoute: (): Promise<RouteResponse> => requestJson('/api/routes/random'),
+  creatorOutcome: (): Promise<CreatorOutcomeResponse> => requestJson('/api/creator/outcome'),
   submitTile: (tile: CourseTile): Promise<SubmitTileResponse> =>
     requestJson('/api/tiles', {
       method: 'POST',
@@ -49,6 +57,19 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(run),
     }),
-  leaderboard: (routeId: string): Promise<LeaderboardResponse> =>
-    requestJson(`/api/leaderboards/${encodeURIComponent(routeId)}`),
+  leaderboard: (routeId: string, routeRevision?: number): Promise<LeaderboardResponse> => {
+    const query =
+      typeof routeRevision === 'number' ? `?revision=${encodeURIComponent(routeRevision)}` : '';
+    return requestJson(`/api/leaderboards/${encodeURIComponent(routeId)}${query}`);
+  },
+  reportTile: (report: ReportTileRequest): Promise<ReportTileResponse> =>
+    requestJson('/api/reports', {
+      method: 'POST',
+      body: JSON.stringify(report),
+    }),
+  removeRouteTile: (tileId: string, request: RemoveTileRequest): Promise<RemoveTileResponse> =>
+    requestJson(`/api/moderation/tiles/${encodeURIComponent(tileId)}/remove`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }),
 };

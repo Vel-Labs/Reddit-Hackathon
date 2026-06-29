@@ -40,3 +40,4 @@ This document is normative. Code, UI text, tests, and roadmap decisions must not
 - Boost triggered: 75 points each, capped at 20.
 - Damage: minus 1,250 points per pip.
 - A failed delivery scores zero.
+- Ranked submissions include bounded lane-change events. The server derives damage, parcel count, boost count, completion, and score by replaying those events against stored route geometry.

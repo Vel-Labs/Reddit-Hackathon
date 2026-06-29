@@ -20,3 +20,17 @@ export const getCurrentPlayer = async (): Promise<{
     authenticated: Boolean(context.userId && username !== 'anonymous'),
   };
 };
+
+export const isCurrentPlayerModerator = async (username: string): Promise<boolean> => {
+  const tenant = getTenantIdentity();
+  try {
+    const moderators = await reddit
+      .getModerators({ subredditName: tenant.name, username, limit: 1, pageSize: 1 })
+      .get(1);
+    return moderators.some(
+      (moderator) => moderator.username.toLowerCase() === username.toLowerCase()
+    );
+  } catch {
+    return false;
+  }
+};

@@ -4,6 +4,13 @@ if (manifest.version !== 1) throw new Error('Unsupported art manifest version.')
 if (!Array.isArray(manifest.requiredRoles) || manifest.requiredRoles.length < 8)
   throw new Error('Art role list is incomplete.');
 if (manifest.mode === 'kenney') {
+  if (!Array.isArray(manifest.packs) || manifest.packs.length === 0)
+    throw new Error('Kenney mode requires at least one source pack record.');
+  for (const pack of manifest.packs) {
+    if (!pack.licenseFile)
+      throw new Error(`Pack ${pack.name ?? '(unknown)'} is missing a licenseFile.`);
+    await access(pack.licenseFile);
+  }
   for (const [role, path] of Object.entries(manifest.mappings ?? {})) {
     if (!manifest.requiredRoles.includes(role)) throw new Error(`Unknown art role: ${role}`);
     await access(`public/assets/kenney/${path}`);

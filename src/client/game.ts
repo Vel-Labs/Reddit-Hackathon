@@ -2,8 +2,10 @@ import * as Phaser from 'phaser';
 import { AchievementsScene } from './scenes/AchievementsScene';
 import { BootScene } from './scenes/BootScene';
 import { BuilderScene } from './scenes/BuilderScene';
+import { CreatorScene } from './scenes/CreatorScene';
 import { MenuScene } from './scenes/MenuScene';
 import { ResultScene } from './scenes/ResultScene';
+import { RoadbookScene } from './scenes/RoadbookScene';
 import { RunnerScene } from './scenes/RunnerScene';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -20,7 +22,16 @@ const config: Phaser.Types.Core.GameConfig = {
     antialias: true,
     pixelArt: false,
   },
-  scene: [BootScene, MenuScene, BuilderScene, RunnerScene, ResultScene, AchievementsScene],
+  scene: [
+    BootScene,
+    MenuScene,
+    BuilderScene,
+    CreatorScene,
+    RoadbookScene,
+    RunnerScene,
+    ResultScene,
+    AchievementsScene,
+  ],
 };
 
 document.addEventListener('DOMContentLoaded', () => {

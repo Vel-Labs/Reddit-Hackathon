@@ -29,7 +29,13 @@ const finalize = (tile: CourseTile): CourseTile => {
   const validation = validateCourseTile(tile);
   if (!validation.ok) {
     throw new Error(
-      `Founding tile ${tile.id} is invalid: ${validation.issues.map((issue) => issue.code).join(', ')}`
+      `Founding tile ${tile.id} is invalid: ${validation.issues
+        .map((issue) =>
+          issue.lane === undefined || issue.column === undefined
+            ? issue.code
+            : `${issue.code}@${issue.lane}:${issue.column}`
+        )
+        .join(', ')}`
     );
   }
   return { ...tile, status: 'certified', metrics: validation.metrics };
@@ -39,7 +45,6 @@ const meadowWarmup = (): CourseTile => {
   let tile = foundingBase('founding-meadow-warmup', 'Founding Couriers', 1101);
   tile = paint(tile, 0, 7, 'road', 'obstacle');
   tile = paint(tile, 1, 10, 'road', 'obstacle');
-  tile = paint(tile, 2, 13, 'road', 'obstacle');
   tile = paint(tile, 2, 6, 'road', 'boost');
   tile = paint(tile, 0, 12, 'road', 'parcel');
   return finalize(tile);
@@ -47,9 +52,9 @@ const meadowWarmup = (): CourseTile => {
 
 const bridgeWeave = (): CourseTile => {
   let tile = foundingBase('founding-bridge-weave', 'Founding Couriers', 1102);
-  for (const lane of [0, 1] as Lane[]) tile = paint(tile, lane, 6, 'road', 'obstacle');
-  for (const lane of [1, 2] as Lane[]) tile = paint(tile, lane, 10, 'road', 'obstacle');
-  for (const lane of [0, 1] as Lane[]) tile = paint(tile, lane, 14, 'road', 'obstacle');
+  tile = paint(tile, 0, 6, 'road', 'obstacle');
+  tile = paint(tile, 1, 10, 'road', 'obstacle');
+  tile = paint(tile, 0, 14, 'road', 'obstacle');
   tile = paint(tile, 2, 5, 'road', 'boost');
   tile = paint(tile, 0, 9, 'road', 'boost');
   tile = paint(tile, 2, 13, 'road', 'parcel');
@@ -59,7 +64,6 @@ const bridgeWeave = (): CourseTile => {
 const parcelFork = (): CourseTile => {
   let tile = foundingBase('founding-parcel-fork', 'Founding Couriers', 1103);
   for (let column = 6; column <= 8; column += 1) tile = paint(tile, 1, column, 'gap');
-  tile = paint(tile, 0, 7, 'road', 'obstacle');
   tile = paint(tile, 2, 6, 'road', 'boost');
   tile = paint(tile, 2, 8, 'road', 'parcel');
   tile = paint(tile, 0, 11, 'road', 'parcel');
@@ -72,8 +76,6 @@ const puddleRun = (): CourseTile => {
   tile = paint(tile, 2, 5, 'road', 'obstacle');
   tile = paint(tile, 2, 6, 'road', 'obstacle');
   tile = paint(tile, 1, 9, 'road', 'obstacle');
-  tile = paint(tile, 0, 12, 'road', 'obstacle');
-  tile = paint(tile, 0, 13, 'road', 'obstacle');
   tile = paint(tile, 1, 5, 'road', 'boost');
   tile = paint(tile, 2, 11, 'road', 'parcel');
   return finalize(tile);
@@ -82,7 +84,6 @@ const puddleRun = (): CourseTile => {
 const brokenBoardwalk = (): CourseTile => {
   let tile = foundingBase('founding-broken-boardwalk', 'Founding Couriers', 1105);
   for (let column = 5; column <= 7; column += 1) tile = paint(tile, 2, column, 'gap');
-  for (let column = 10; column <= 12; column += 1) tile = paint(tile, 0, column, 'gap');
   tile = paint(tile, 1, 7, 'road', 'obstacle');
   tile = paint(tile, 1, 10, 'road', 'boost');
   tile = paint(tile, 2, 13, 'road', 'parcel');
@@ -91,9 +92,9 @@ const brokenBoardwalk = (): CourseTile => {
 
 const switchback = (): CourseTile => {
   let tile = foundingBase('founding-switchback', 'Founding Couriers', 1106);
-  for (const lane of [0, 1] as Lane[]) tile = paint(tile, lane, 5, 'road', 'obstacle');
-  for (const lane of [1, 2] as Lane[]) tile = paint(tile, lane, 9, 'road', 'obstacle');
-  for (const lane of [0, 1] as Lane[]) tile = paint(tile, lane, 13, 'road', 'obstacle');
+  tile = paint(tile, 0, 5, 'road', 'obstacle');
+  tile = paint(tile, 1, 9, 'road', 'obstacle');
+  tile = paint(tile, 0, 13, 'road', 'obstacle');
   tile = paint(tile, 2, 4, 'road', 'boost');
   tile = paint(tile, 0, 8, 'road', 'parcel');
   tile = paint(tile, 2, 12, 'road', 'boost');
@@ -105,9 +106,7 @@ const marketStreet = (): CourseTile => {
   tile = paint(tile, 0, 5, 'road', 'parcel');
   tile = paint(tile, 1, 6, 'road', 'obstacle');
   tile = paint(tile, 2, 7, 'road', 'boost');
-  tile = paint(tile, 0, 10, 'road', 'obstacle');
   tile = paint(tile, 1, 11, 'road', 'parcel');
-  tile = paint(tile, 2, 12, 'road', 'obstacle');
   tile = paint(tile, 0, 14, 'road', 'boost');
   return finalize(tile);
 };
@@ -115,11 +114,9 @@ const marketStreet = (): CourseTile => {
 const ravineChoice = (): CourseTile => {
   let tile = foundingBase('founding-ravine-choice', 'Founding Couriers', 1108);
   for (let column = 6; column <= 9; column += 1) tile = paint(tile, 1, column, 'gap');
-  tile = paint(tile, 0, 7, 'road', 'obstacle');
   tile = paint(tile, 0, 8, 'road', 'parcel');
   tile = paint(tile, 2, 7, 'road', 'boost');
   tile = paint(tile, 2, 9, 'road', 'parcel');
-  tile = paint(tile, 2, 13, 'road', 'obstacle');
   return finalize(tile);
 };
 

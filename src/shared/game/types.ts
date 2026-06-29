@@ -5,6 +5,12 @@ export type Terrain = 'road' | 'gap';
 export type Feature = 'none' | 'obstacle' | 'boost' | 'parcel';
 export type TileStatus = 'draft' | 'certified' | 'featured' | 'removed';
 export type RouteScope = 'tenant' | 'world';
+export type TileReportReason =
+  | 'unfair-layout'
+  | 'broken-route'
+  | 'unsafe-content'
+  | 'wrong-attribution';
+export type TileReportStatus = 'open' | 'actioned';
 
 export type Cell = {
   terrain: Terrain;
@@ -60,9 +66,27 @@ export type RouteBundle = {
   tiles: CourseTile[];
 };
 
+export type TileReport = {
+  id: string;
+  tenantId: string;
+  routeId: string;
+  routeRevision: number;
+  tileId: string;
+  tileAuthorId: string;
+  tileAuthorName: string;
+  reporterId: string;
+  reporterName: string;
+  reason: TileReportReason;
+  status: TileReportStatus;
+  createdAt: string;
+  actionedAt?: string;
+  actionedBy?: string;
+};
+
 export type RunStart = {
   token: string;
   routeId: string;
+  routeRevision: number;
   issuedAt: string;
   expiresAt: string;
 };
@@ -70,6 +94,8 @@ export type RunStart = {
 export type RunSubmission = {
   token: string;
   routeId: string;
+  routeRevision?: number;
+  laneEvents?: LaneInputEvent[];
   elapsedMs: number;
   damageTaken: number;
   parcelsCollected: number;
@@ -82,6 +108,11 @@ export type RunResult = RunSubmission & {
   username: string;
   score: number;
   completedAt: string;
+};
+
+export type LaneInputEvent = {
+  column: number;
+  lane: Lane;
 };
 
 export type AchievementId =
@@ -144,6 +175,16 @@ export type TileValidationResult = {
   ok: boolean;
   issues: ValidationIssue[];
   metrics: TileMetrics;
+};
+
+export type SafePathPoint = {
+  lane: Lane;
+  column: number;
+};
+
+export type SafePath = {
+  entranceLane: Lane;
+  points: SafePathPoint[];
 };
 
 export type LeaderboardEntry = {

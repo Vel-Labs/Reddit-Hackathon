@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Builder undo and redo controls with bounded local edit history.
+- Builder certification now overlays shared-validator clean paths for every covered entrance lane.
+- Shared tile validation now rejects clean paths that require forced lane switches without two columns of reaction margin.
+- Shared tile validation now requires four columns of lead space before a same-direction two-lane migration.
+- Shared tile validation now rejects forced switches into lanes that were hidden by hazards during the camera-lookahead window.
+- Reaction-margin validation issues now include lane and column evidence for Builder highlighting.
+- Builder certification failures now highlight the implicated grid cell when validator evidence is available.
+- Builder drafts now show publish-blocker counts and a `NEXT ISSUE` repair loop that cycles through validator errors one at a time.
+- Founding weave/switchback fallback tiles were softened to satisfy the same reaction-margin rule as community tiles.
+- Founding parcel-fork and ravine-choice fallback tiles were softened to satisfy the two-lane migration rule.
+- Founding meadow-warmup, puddle-run, broken-boardwalk, market-street, and ravine-choice fallback tiles were softened to satisfy camera-lookahead fairness.
+- Runner feedback and tile seam labels now reuse pooled text objects instead of creating transient labels during rendering.
+- Roadbook scene lists tenant routes, shows route details, loads the selected route leaderboard, and preserves shuffle/play actions.
+- Ranked run tokens and Roadbook leaderboards are now scoped to the route revision active when the run started.
+- Roadbook tile review now supports fixed-reason reports and guarded tile removal that triggers route repair.
+- Ranked run completion now submits compact lane-change events and derives damage, parcels, boosts, completion, and score through shared server replay.
+- Imported a small CC0 Kenney Platformer Pack Redux meadow subset and preloads mapped semantic art roles while preserving vector fallback.
+- Added a Creator postcard that shows featured tile crossings and top/middle/bottom path-choice splits from server-derived route/run data.
+
 ## 0.1.0 — 2026-06-25
 
 ### Added

@@ -8,6 +8,8 @@ import type {
   RunStart,
   RunSubmission,
   TenantIdentity,
+  TileReport,
+  TileReportReason,
   TileValidationResult,
 } from './game/types';
 
@@ -52,6 +54,11 @@ export type RouteResponse = {
   route: RouteBundle;
 };
 
+export type RoutesResponse = {
+  status: 'ok';
+  routes: RouteBundle[];
+};
+
 export type StartRunRequest = {
   routeId: string;
 };
@@ -69,6 +76,53 @@ export type CompleteRunResponse = {
   profile: PlayerProfile;
 };
 
+export type CreatorOutcomeTile = {
+  tileId: string;
+  routeId: string;
+  dateKey: string;
+  routeRevision: number;
+  tileIndex: number;
+  crossings: number;
+  cleanCrossings: number;
+  pathChoices: {
+    top: number;
+    middle: number;
+    bottom: number;
+  };
+};
+
+export type CreatorOutcomeResponse = {
+  status: 'ok';
+  profile: PlayerProfile;
+  featuredTiles: number;
+  totalCrossings: number;
+  tiles: CreatorOutcomeTile[];
+};
+
+export type ReportTileRequest = {
+  routeId: string;
+  routeRevision: number;
+  tileId: string;
+  reason: TileReportReason;
+};
+
+export type ReportTileResponse = {
+  status: 'ok';
+  report: TileReport;
+};
+
+export type RemoveTileRequest = {
+  routeId: string;
+  routeRevision: number;
+  reportId?: string;
+};
+
+export type RemoveTileResponse = {
+  status: 'ok';
+  removedTileId: string;
+  repairedRoutes: number;
+};
+
 export type ProfileResponse = {
   status: 'ok';
   profile: PlayerProfile;
@@ -76,5 +130,6 @@ export type ProfileResponse = {
 
 export type LeaderboardResponse = {
   status: 'ok';
+  routeRevision: number;
   entries: LeaderboardEntry[];
 };

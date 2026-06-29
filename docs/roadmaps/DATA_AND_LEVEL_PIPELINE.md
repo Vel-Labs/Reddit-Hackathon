@@ -83,9 +83,9 @@ When a tile is removed:
 4. Preserve route ID and original creation date.
 5. Increment revision.
 6. Replace tile sequence/fallbacks.
-7. Reset or version leaderboards if geometry changed.
+7. Keep leaderboards versioned by route revision so scores never mix across different geometry.
 
-The scaffold recompiles and increments revision but does not yet clear old leaderboards. That is a launch hardening item.
+The scaffold recompiles and increments revision, and ranked run storage is namespaced by revision.
 
 ## Redis layout
 
@@ -122,18 +122,22 @@ The shipped endpoint is a bounded placeholder. Implement:
 
 ## API surface
 
-| Endpoint                         | Purpose                                                   |
-| -------------------------------- | --------------------------------------------------------- |
-| `GET /api/bootstrap`             | tenant, player, daily route, profile, achievement catalog |
-| `POST /api/tiles/validate`       | optional server validation preview                        |
-| `POST /api/tiles`                | rewrite, certify, and save daily tile                     |
-| `DELETE /api/tiles/:id`          | owner removal and route repair                            |
-| `GET /api/routes/daily`          | today’s tenant route                                      |
-| `GET /api/routes/random`         | local Roadbook or optional world adapter                  |
-| `POST /api/runs/start`           | one-use token                                             |
-| `POST /api/runs/complete`        | validate summary, score, profile, leaderboard             |
-| `GET /api/leaderboards/:routeId` | top best runs                                             |
-| `GET /api/profile`               | authenticated profile                                     |
+| Endpoint                                | Purpose                                                   |
+| --------------------------------------- | --------------------------------------------------------- |
+| `GET /api/bootstrap`                    | tenant, player, daily route, profile, achievement catalog |
+| `POST /api/tiles/validate`              | optional server validation preview                        |
+| `POST /api/tiles`                       | rewrite, certify, and save daily tile                     |
+| `DELETE /api/tiles/:id`                 | owner removal and route repair                            |
+| `POST /api/reports`                     | structured tile report from Roadbook                      |
+| `POST /api/moderation/tiles/:id/remove` | author/moderator removal and route repair                 |
+| `GET /api/routes`                       | tenant Roadbook route list                                |
+| `GET /api/routes/daily`                 | today’s tenant route                                      |
+| `GET /api/routes/random`                | local Roadbook or optional world adapter                  |
+| `POST /api/runs/start`                  | one-use token                                             |
+| `POST /api/runs/complete`               | validate summary, score, profile, leaderboard             |
+| `GET /api/leaderboards/:routeId`        | top best runs                                             |
+| `GET /api/creator/outcome`              | authenticated creator crossing and path-choice postcard   |
+| `GET /api/profile`                      | authenticated profile                                     |
 
 ## Integrity hardening backlog
 
@@ -142,9 +146,7 @@ The shipped endpoint is a bounded placeholder. Implement:
 - Server-side replay from input events.
 - Transaction for one-submission-per-day race.
 - Idempotency key for route feature stat updates.
-- Route leaderboard namespace includes revision.
 - Bounded profile `completedRouteIds` or a compact per-user index.
-- Moderator removal endpoint and report records.
 - Metrics privacy review before external catalog publication.
 
 ## Acceptance criteria

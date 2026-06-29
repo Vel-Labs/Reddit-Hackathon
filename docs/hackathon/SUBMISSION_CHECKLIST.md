@@ -1,16 +1,27 @@
 # Hackathon Submission Checklist
 
+- [ ] Review [`RULES_COMPLIANCE.md`](RULES_COMPLIANCE.md) against the live official rules and Devvit Rules before final submission.
+- [ ] Devpost hackathon registration completed.
+- [ ] Reddit Developer Platform account access confirmed.
 - [ ] Unique, cleared app name in `devvit.json`.
 - [ ] App listing completed on developer.reddit.com.
-- [ ] Public demo subreddit and post.
+- [ ] App listing link available: `https://developers.reddit.com/apps/{app-name}`.
+- [ ] Public demo subreddit with fewer than 200 members, or documented admin-access path.
+- [ ] Public Reddit post running the game.
+- [ ] Root `README.md` accurately explains the game and how to play.
+- [ ] Devpost text description accurately matches the live app.
+- [ ] Optional demo video is under one minute and shows the app running on its target device.
 - [ ] First launch explains controls without external documentation.
 - [ ] Existing founding routes demonstrate Roadbook immediately.
 - [ ] Builder publish works for authenticated user.
 - [ ] Daily route scheduled/idempotent.
 - [ ] Mobile viewport, mute, reduced motion.
 - [ ] Report/removal controls and route repair.
-- [ ] Third-party asset licenses recorded.
+- [x] Third-party asset licenses recorded for the imported Kenney subset.
 - [ ] Privacy/data deletion behavior documented.
 - [ ] `npm run check` passes.
+- [ ] `npm run build` passes.
 - [ ] No World Tour claim unless real shared service is operational.
+- [ ] No payments, external services, free-text Builder input, uploads, arbitrary drawing, or jumping mechanic added as MVP dependencies.
+- [ ] Submission materials are in English or include English translations.
 - [ ] Demo captures both build and ride loops.

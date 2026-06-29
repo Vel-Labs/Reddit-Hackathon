@@ -55,7 +55,7 @@ Show an achievement after the action that unlocked it:
 
 - certification stamp after publish;
 - medal/result postcard after a run;
-- creator outcome card after feature/crossing threshold.
+- creator outcome card after feature/crossing threshold. First-pass Creator postcard is available from the main menu and shows featured tile crossings plus top/middle/bottom path-choice splits from current route best-run data.
 
 ### Achievement postcard
 

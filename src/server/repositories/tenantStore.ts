@@ -1,6 +1,12 @@
 import { redis } from '@devvit/web/server';
 import { KEYS } from '../core/keys';
-import type { CourseTile, PlayerProfile, RouteBundle, RunResult } from '../../shared/game/types';
+import type {
+  CourseTile,
+  PlayerProfile,
+  RouteBundle,
+  RunResult,
+  TileReport,
+} from '../../shared/game/types';
 
 const parse = <T>(value: string | undefined): T | undefined => {
   if (!value) return undefined;
@@ -90,17 +96,49 @@ export const tenantStore = {
     return value;
   },
 
-  async saveBestRun(routeId: string, run: RunResult): Promise<void> {
-    const existingRaw = await redis.hGet(KEYS.bestRuns(routeId), run.userId);
+  async saveBestRun(routeId: string, revision: number, run: RunResult): Promise<void> {
+    const existingRaw = await redis.hGet(KEYS.bestRuns(routeId, revision), run.userId);
     const existing = parse<RunResult>(existingRaw);
     if (!existing || run.score > existing.score) {
-      await redis.hSet(KEYS.bestRuns(routeId), { [run.userId]: JSON.stringify(run) });
-      await redis.zAdd(KEYS.leaderboard(routeId), { member: run.userId, score: run.score });
+      await redis.hSet(KEYS.bestRuns(routeId, revision), { [run.userId]: JSON.stringify(run) });
+      await redis.zAdd(KEYS.leaderboard(routeId, revision), {
+        member: run.userId,
+        score: run.score,
+      });
     }
   },
 
-  async listBestRuns(routeId: string): Promise<RunResult[]> {
-    return parseRecord<RunResult>(await redis.hGetAll(KEYS.bestRuns(routeId)));
+  async listBestRuns(routeId: string, revision: number): Promise<RunResult[]> {
+    return parseRecord<RunResult>(await redis.hGetAll(KEYS.bestRuns(routeId, revision)));
+  },
+
+  async getReport(id: string): Promise<TileReport | undefined> {
+    return parse<TileReport>(await redis.hGet(KEYS.reports, id));
+  },
+
+  async saveReport(report: TileReport): Promise<void> {
+    await redis.hSet(KEYS.reports, { [report.id]: JSON.stringify(report) });
+    await redis.zAdd(KEYS.reportIndex, {
+      member: report.id,
+      score: Date.parse(report.createdAt),
+    });
+  },
+
+  async actionReportsForTile(
+    tileId: string,
+    actionedAt: string,
+    actionedBy: string
+  ): Promise<void> {
+    const reports = parseRecord<TileReport>(await redis.hGetAll(KEYS.reports));
+    const updates = Object.fromEntries(
+      reports
+        .filter((report) => report.tileId === tileId && report.status === 'open')
+        .map((report) => [
+          report.id,
+          JSON.stringify({ ...report, status: 'actioned', actionedAt, actionedBy }),
+        ])
+    );
+    if (Object.keys(updates).length > 0) await redis.hSet(KEYS.reports, updates);
   },
 
   async incrementFeatured(tileId: string): Promise<number> {
