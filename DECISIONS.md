@@ -104,3 +104,10 @@ After a certified tile is published, Builder offers `Test My Tile`, `Ride Today`
 **Status:** Accepted
 
 Runner route objects may render with curated Kenney textures for readability, but gameplay continues to depend only on canonical cells and semantic roles. Missing art falls back to vector drawing, and no rule or collision path may depend on a filename.
+
+## D-016 — Mobile Runner input belongs on the playfield
+
+**Date:** 2026-06-29
+**Status:** Accepted
+
+The right-side movement rail is not accessible enough in Reddit mobile view. Runner mobile input should use the course itself: vertical swipes move one lane, and tapping a top/middle/bottom lane region moves one legal step toward that lane. Ranked replay still records adjacent lane-change events only.

@@ -41,6 +41,11 @@ const BASE_COLUMNS_PER_SECOND = 2.75;
 const BOOST_COLUMNS_PER_SECOND = 4.1;
 const LANE_TWEEN_MS = 210;
 const FOUNDING_AUTHOR = 'daily-dash-founders';
+const PLAYFIELD_LEFT = 20;
+const PLAYFIELD_RIGHT = 1060;
+const PLAYFIELD_TOP = 118;
+const PLAYFIELD_BOTTOM = 610;
+const SWIPE_THRESHOLD_PX = 34;
 
 const makePreviewRoute = (tile: CourseTile): RouteBundle => {
   const flankA = FOUNDING_TILES[0];
@@ -85,14 +90,13 @@ export class RunnerScene extends Phaser.Scene {
   private statsText?: Phaser.GameObjects.Text;
   private controlsText?: Phaser.GameObjects.Text;
   private keyboard: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
-  private touchUp?: Phaser.GameObjects.Zone;
-  private touchDown?: Phaser.GameObjects.Zone;
   private pointerStartY: number | undefined;
   private wheelA?: Phaser.GameObjects.Arc;
   private wheelB?: Phaser.GameObjects.Arc;
   private parcelVisual?: Phaser.GameObjects.Rectangle;
   private tileLabels = new Map<number, Phaser.GameObjects.Text>();
   private routeSprites = new Map<string, Phaser.GameObjects.Image>();
+  private finishLabel?: Phaser.GameObjects.Text;
   private feedbackText?: Phaser.GameObjects.Text;
   private feedbackTween?: Phaser.Tweens.Tween;
   private laneEvents: LaneInputEvent[] = [];
@@ -153,8 +157,12 @@ export class RunnerScene extends Phaser.Scene {
       if (this.pointerStartY === undefined) return;
       const deltaY = pointer.y - this.pointerStartY;
       this.pointerStartY = undefined;
-      if (Math.abs(deltaY) < 38) return;
-      this.requestLane(deltaY < 0 ? -1 : 1);
+      if (!this.isPlayfieldPointer(pointer)) return;
+      if (Math.abs(deltaY) >= SWIPE_THRESHOLD_PX) {
+        this.requestLane(deltaY < 0 ? -1 : 1);
+        return;
+      }
+      this.requestLaneToward(this.laneFromPointerY(pointer.y));
     });
 
     this.add
@@ -190,13 +198,23 @@ export class RunnerScene extends Phaser.Scene {
       })
       .setOrigin(1, 0)
       .setDepth(9);
-    this.controlsText = this.add
-      .text(1230, 126, '▲\nUP\n\nSWIPE\nOR TAP\n\nDOWN\n▼', {
+    this.add
+      .text(640, 104, 'Swipe up/down anywhere on the road, or tap a lane to move toward it.', {
         fontFamily: FONT_FAMILY,
-        fontSize: '21px',
+        fontSize: '17px',
         fontStyle: 'bold',
         color: '#243642',
         align: 'center',
+      })
+      .setOrigin(0.5, 0)
+      .setDepth(9);
+    this.controlsText = this.add
+      .text(965, 70, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#49626d',
+        align: 'right',
       })
       .setOrigin(1, 0)
       .setDepth(9);
@@ -273,6 +291,26 @@ export class RunnerScene extends Phaser.Scene {
     });
   }
 
+  private requestLaneToward(lane: Lane): void {
+    if (lane === this.targetLane) return;
+    this.requestLane(lane < this.targetLane ? -1 : 1);
+  }
+
+  private laneFromPointerY(y: number): Lane {
+    if (y < (LANE_Y[0] + LANE_Y[1]) / 2) return 0;
+    if (y > (LANE_Y[1] + LANE_Y[2]) / 2) return 2;
+    return 1;
+  }
+
+  private isPlayfieldPointer(pointer: Phaser.Input.Pointer): boolean {
+    return (
+      pointer.x >= PLAYFIELD_LEFT &&
+      pointer.x <= PLAYFIELD_RIGHT &&
+      pointer.y >= PLAYFIELD_TOP &&
+      pointer.y <= PLAYFIELD_BOTTOM
+    );
+  }
+
   private processColumn(column: number): void {
     const cells = this.columns[column];
     if (!cells) return;
@@ -340,6 +378,7 @@ export class RunnerScene extends Phaser.Scene {
     scenery.clear();
     this.hideTileLabels();
     this.hideRouteSprites();
+    this.finishLabel?.setVisible(false);
 
     this.drawProceduralScenery(scenery);
     const startColumn = Math.max(0, Math.floor(this.positionColumns) - 3);
@@ -398,6 +437,9 @@ export class RunnerScene extends Phaser.Scene {
       }
 
       const tileWidth = this.route.tiles[0]?.width ?? 18;
+      if (columnIndex === this.columns.length - 1) {
+        this.drawFinishMarker(graphics, x);
+      }
       if (columnIndex > 0 && columnIndex % tileWidth === 0) {
         graphics.lineStyle(3, COLORS.ink, 0.24).lineBetween(x, 136, x, 598);
         const tileIndex = Math.floor(columnIndex / tileWidth);
@@ -516,6 +558,36 @@ export class RunnerScene extends Phaser.Scene {
       .setVisible(true);
   }
 
+  private drawFinishMarker(graphics: Phaser.GameObjects.Graphics, x: number): void {
+    if (x < -80 || x > 1360) return;
+    graphics.lineStyle(5, COLORS.ink, 0.72).lineBetween(x + 46, 136, x + 46, 598);
+    for (let row = 0; row < 9; row += 1) {
+      for (let column = 0; column < 2; column += 1) {
+        const dark = (row + column) % 2 === 0;
+        graphics
+          .fillStyle(dark ? COLORS.ink : COLORS.white, dark ? 0.92 : 0.82)
+          .fillRect(x + 48 + column * 18, 144 + row * 18, 18, 18);
+      }
+    }
+    graphics
+      .fillStyle(COLORS.paper, 0.94)
+      .fillRoundedRect(x - 34, 122, 132, 34, 8)
+      .lineStyle(2, COLORS.ink, 0.6)
+      .strokeRoundedRect(x - 34, 122, 132, 34, 8);
+    if (!this.finishLabel) {
+      this.finishLabel = this.add
+        .text(x + 32, 130, 'FINISH', {
+          fontFamily: FONT_FAMILY,
+          fontSize: '15px',
+          fontStyle: 'bold',
+          color: '#243642',
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(4);
+    }
+    this.finishLabel.setPosition(x + 32, 130).setVisible(true);
+  }
+
   private getFeedbackText(): Phaser.GameObjects.Text {
     if (!this.feedbackText) {
       this.feedbackText = this.add
@@ -538,31 +610,10 @@ export class RunnerScene extends Phaser.Scene {
     const graphics = this.touchGuideGraphics;
     if (!graphics) return;
     graphics.clear();
-    graphics
-      .fillStyle(COLORS.white, 0.34)
-      .fillRoundedRect(1060, 112, 190, 225, 18)
-      .fillRoundedRect(1060, 365, 190, 225, 18)
-      .lineStyle(3, COLORS.ink, 0.24)
-      .strokeRoundedRect(1060, 112, 190, 225, 18)
-      .strokeRoundedRect(1060, 365, 190, 225, 18);
-    graphics
-      .fillStyle(COLORS.secondary, 0.72)
-      .fillTriangle(1155, 150, 1118, 214, 1192, 214)
-      .fillTriangle(1155, 552, 1118, 488, 1192, 488);
-
-    this.touchUp = this.add.zone(1155, 224, 250, 255).setInteractive().setDepth(11);
-    this.touchDown = this.add.zone(1155, 488, 250, 255).setInteractive().setDepth(11);
-    this.touchUp.on('pointerup', (pointer: Phaser.Input.Pointer) =>
-      this.handleTouchTap(pointer, -1)
-    );
-    this.touchDown.on('pointerup', (pointer: Phaser.Input.Pointer) =>
-      this.handleTouchTap(pointer, 1)
-    );
-  }
-
-  private handleTouchTap(pointer: Phaser.Input.Pointer, direction: -1 | 1): void {
-    if (Math.abs(pointer.y - pointer.downY) >= 38) return;
-    this.requestLane(direction);
+    graphics.lineStyle(2, COLORS.white, 0.18);
+    for (const y of LANE_Y) {
+      graphics.strokeRoundedRect(PLAYFIELD_LEFT + 16, y - 62, PLAYFIELD_RIGHT - 66, 118, 16);
+    }
   }
 
   private flashMessage(message: string, color: number = COLORS.secondary): void {
@@ -609,20 +660,18 @@ export class RunnerScene extends Phaser.Scene {
     const frame = this.add.graphics().setDepth(7);
     frame.fillStyle(COLORS.paper, 0.92).fillRoundedRect(20, 15, 1045, 90, 20);
     frame.lineStyle(3, COLORS.ink, 0.65).strokeRoundedRect(20, 15, 1045, 90, 20);
-    frame.fillStyle(COLORS.paper, 0.86).fillRoundedRect(1050, 95, 215, 515, 20);
-    frame.lineStyle(3, COLORS.ink, 0.65).strokeRoundedRect(1050, 95, 215, 515, 20);
-    frame.lineStyle(2, COLORS.ink, 0.2).lineBetween(1065, 350, 1250, 350);
   }
 
   private updateHud(): void {
     this.drawIntegrityPips();
     const total = Math.max(1, this.columns.length);
     const progress = Phaser.Math.Clamp(Math.floor((this.positionColumns / total) * 100), 0, 100);
+    const columnsLeft = Phaser.Math.Clamp(Math.ceil(total - this.positionColumns), 0, total);
     this.statsText?.setText(
-      `ROUTE ${progress}%\nPARCELS ${this.parcelsCollected}/${countRouteParcels(this.route)}`
+      `TO FINISH ${100 - progress}%\nPARCELS ${this.parcelsCollected}/${countRouteParcels(this.route)}`
     );
     const laneName = this.targetLane === 0 ? 'TOP' : this.targetLane === 1 ? 'MIDDLE' : 'BOTTOM';
-    this.controlsText?.setText(`LANE\n${laneName}\n\n▲ UP\n\n▼ DOWN`);
+    this.controlsText?.setText(`LANE ${laneName} · ${columnsLeft} COL LEFT`);
   }
 
   private drawIntegrityPips(): void {

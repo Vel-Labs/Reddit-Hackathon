@@ -12,12 +12,12 @@ The evergreen game is a finite three-lane side-scrolling runner. “Evergreen”
 - Up moves one lane upward.
 - Down moves one lane downward.
 - Keyboard: arrows plus W/S.
-- Mobile: two large vertical touch zones and swipe support after MVP.
+- Mobile: swipe up/down on the course or tap a lane to move one legal lane step toward it.
 - No jump in version 1.
 
 Lane movement is visually eased but logically deterministic. The canonical simulator evaluates one time column at a time and applies a one-column lane-change cooldown.
 
-Current implementation note: large tap zones and vertical swipe support are implemented in Runner on 2026-06-29. Live Devvit mobile gesture-conflict QA remains pending.
+Current implementation note: right-side touch rails were removed after mobile dogfooding on 2026-06-29. Runner now accepts playfield-wide vertical swipes plus tap-a-lane input. Live Devvit mobile gesture-conflict QA remains pending.
 
 ## Failure contract
 
@@ -119,6 +119,10 @@ Randomly selects a route from the local Roadbook. The endpoint can later query W
 ### Weekly Long Haul — stretch
 
 A finite route assembled from selected tiles across the week. It reuses the same compiler and does not introduce infinite generation.
+
+### Free Drive — future unranked mode
+
+Free Drive may be a deliberately generative, unranked practice surface later. It must stay separate from Daily Dash/Roadbook ranked routes so medals, attribution, route revisions, and server replay remain bounded and reproducible.
 
 ## Route composition pacing
 

@@ -28,6 +28,8 @@
 - Runner route rendering now uses semantic Kenney road, crate, boost, and collectible textures when available, with vector fallback preserved.
 - Runner route HUD now shows route date, revision, difficulty, and community-authored percentage.
 - Creator postcard entries now label featured status and clean-clear rate.
+- Runner mobile controls now use playfield-wide vertical swipes and tap-a-lane input instead of a right-side movement rail.
+- Bounded routes now show stronger finish affordances with remaining route distance and an in-course finish marker.
 
 ## 0.1.0 — 2026-06-25
 

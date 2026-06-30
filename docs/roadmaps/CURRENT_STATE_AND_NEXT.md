@@ -21,7 +21,8 @@
 - Small CC0 Kenney Platformer Pack Redux meadow subset is imported, licensed, manifest-mapped, and preloaded behind semantic roles.
 - Creator postcard shows featured tile crossings and top/middle/bottom path-choice splits derived from current route best-run data.
 - Runner first-run UI now shows clearer lane controls, large package-integrity pips, event-specific damage/reward feedback, and a compact object legend.
-- Runner accepts tap zones and vertical swipe input for lane changes; live Reddit mobile gesture conflict QA is still pending.
+- Runner accepts playfield-wide vertical swipe and tap-a-lane input for lane changes; the previous right-side movement rail was removed after mobile dogfooding.
+- Bounded routes show remaining distance and an in-course finish marker so Daily/Roadbook runs do not read as endless generation.
 - Builder post-publish flow now offers `Test My Tile`, `Ride Today`, `Try Yesterday`, and `Roadbook`; `Test My Tile` uses preview mode and stays practice-only.
 - Builder repair flow now includes `ERASE FIX` for the currently highlighted validator issue.
 - Runner route rendering now uses semantic Kenney textures for road, crate, boost, and collectible roles when available, with vector fallback preserved.
@@ -43,6 +44,7 @@ Current live URL: `https://www.reddit.com/r/drawn_to_deliver_dev/?playtest=drawn
 
 1. **Live persistence proof through behavior.** Prove Redis persistence through user-visible flows rather than a raw diagnostics panel: publish a tile, reload, see it in Creator/Roadbook or tomorrow’s route candidate pool. Only add diagnostics if behavior proof becomes insufficient. Current status: live/manual QA pending.
 2. **Moderation/reporting QA.** Exercise report/remove flows in the live subreddit with moderator account context. Confirm system fallback, route repair, and revision behavior are legible. Current status: live/moderator QA pending.
-3. **Device matrix.** Test desktop Chrome, Devvit mobile viewport, and real mobile Reddit if available. Check text fit, canvas framing, expanded-mode sizing, and overlapping controls. Current status: local build passes; live mobile/real-device QA pending.
-4. **Submission packaging.** Update Devpost-ready materials: tagline, description, rules compliance, public post link, app listing link, README proof, and optional short demo script/video. Current status: blocked until live persistence/moderation/device proof is refreshed after this gameplay pass.
-5. **World Tour remains disabled.** Keep World Tour as documented adapter/future scope until local launch quality is solid.
+3. **Device matrix.** Test desktop Chrome, Devvit mobile viewport, and real mobile Reddit if available. Check text fit, canvas framing, expanded-mode sizing, and overlapping controls. Current status: local build passes; real mobile dogfood found and removed the inaccessible side movement rail, but fresh live-device QA is still needed after redeploy.
+4. **Free Drive concept.** Consider a deliberately generative unranked practice mode only after bounded Daily/Roadbook route completion reads clearly. Do not mix Free Drive with ranked route revisions or leaderboards.
+5. **Submission packaging.** Update Devpost-ready materials: tagline, description, rules compliance, public post link, app listing link, README proof, and optional short demo script/video. Current status: blocked until live persistence/moderation/device proof is refreshed after this gameplay pass.
+6. **World Tour remains disabled.** Keep World Tour as documented adapter/future scope until local launch quality is solid.
